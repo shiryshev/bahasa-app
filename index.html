@@ -296,6 +296,7 @@
   function matchId(raw,user){
     return norm(user)===norm(raw) || sim(user,raw)>=0.88;
   }
+  function esc(s){return (s||"").replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
   function pick(a){return a[Math.floor(Math.random()*a.length)];}
   function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function range(n){var r=[];for(var i=0;i<n;i++)r.push(i);return r;}
@@ -344,15 +345,14 @@
   // ---------- home UI ----------
   var SIZES=[10,20,30];
   var DIRS={spelling:[["both","Оба"],["ru2id","РУ → ID"],["id2ru","ID → РУ"]],
-            listening:[["both","Оба"],["dict","Диктант"],["comp","Понимание"]],
-            pron:[["both","Оба"],["read","Прочитать"],["mean","По смыслу"]]};
+            listening:[["both","Оба"],["dict","Диктант"],["comp","Понимание"]]};
   function renderModes(){document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===smode);});}
   function renderSizes(){var s=$("sizeSeg");s.innerHTML="";SIZES.forEach(function(n){
     var b=document.createElement("button");b.textContent=n;b.className=(n===size?"active":"");
     b.onclick=function(){size=n;set.size=n;jsave(SKEY,set);renderSizes();};s.appendChild(b);});}
   function renderDirs(){
-    $("dirWrap").style.display = smode==="full" ? "none":"block";
-    if(smode==="full")return;
+    $("dirWrap").style.display = (smode==="full"||smode==="pron") ? "none":"block";
+    if(smode==="full"||smode==="pron")return;
     var opts=DIRS[smode]||[], seg=$("dirSeg"); seg.innerHTML="";
     if(!opts.some(function(o){return o[0]===dir;}))dir="both";
     opts.forEach(function(o){var b=document.createElement("button");b.textContent=o[1];
@@ -390,7 +390,7 @@
     var sk=curSkill(), base = session.mode==="full" ? "both" : (set.dir||"both"), d;
     if(sk==="spelling") d=(base==="ru2id"||base==="id2ru")?base:pick(["ru2id","id2ru"]);
     else if(sk==="listening") d=(base==="dict"||base==="comp")?base:pick(["dict","comp"]);
-    else d=(base==="read"||base==="mean")?base:pick(["read","mean"]);
+    else d="mean";
     session.curDir=d; saveSession();
   }
 
@@ -435,32 +435,33 @@
       ans.placeholder = d==="dict"?"Напишите, что услышали (бахаса)…":"Напишите перевод…";
       speak(cur.id_text); setTimeout(function(){ans.focus();},50);
     } else {
-      $("exKind").textContent = d==="read" ? "Произношение · Прочитать вслух" : "Произношение · По смыслу";
-      if(d==="read"){ $("exQ").textContent=cur.id_text; $("exQ").className="q small";
-        $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">'+cur.pron+' · '+cur.ru+'</div>';
-      } else { $("exQ").textContent=cur.ru; $("exQ").className="q";
-        $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">скажите это на бахасе</div>'; }
+      // Произношение: видим только русский, вспоминаем и говорим на бахасе
+      $("exKind").textContent = "Произношение · скажите на бахасе";
+      $("exQ").textContent=cur.ru; $("exQ").className="q";
+      $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">вспомните, как это на индонезийском, и произнесите вслух</div>';
       $("pronBox").classList.remove("hidden");
-      $("micHint").textContent = hasSR ? "Нажмите и произнесите вслух" : "Распознавание недоступно — послушайте образец и оцените себя";
+      $("hearIt").style.display="none"; // не подсказываем до ответа
+      $("micHint").textContent = hasSR ? "Нажмите и произнесите вслух" : "Распознавание недоступно — оцените себя сами";
       $("mic").style.display = hasSR ? "block":"none";
       if(!hasSR){ var w=$("selfWrap"); w.classList.remove("hidden");
         w.innerHTML='<button class="btn" id="selfOk">✅ Верно</button><button class="btn sec" id="selfBad" style="width:46%">❌ Нет</button>';
-        $("selfOk").onclick=function(){finishPron(1,"(самооценка)");};
-        $("selfBad").onclick=function(){finishPron(0,"(самооценка)");};
+        $("selfOk").onclick=function(){finishPron(1,"","Самооценка: верно");};
+        $("selfBad").onclick=function(){finishPron(0,"","Самооценка: неверно");};
       }
     }
   }
 
-  function showFeedback(ok,correctText,extra){
+  function showFeedback(ok,correctText,userAns,extra){
     answered=true; var cur=curItem(), fb=$("fb");
     fb.className="fb "+(ok?"ok":"bad");
-    var html = ok?"<b>Верно!</b>":"<b>Правильно:</b> "+correctText;
+    var html = ok?"<b>Верно!</b>":"<b>Правильно:</b> "+esc(correctText);
+    if(userAns) html+='<div class="pron">Ваш ответ: «'+esc(userAns)+'»</div>';
     if(extra) html+=extra;
-    html+='<div class="pron">'+cur.id_text+' — '+cur.ru+'<br>['+cur.pron+']</div>';
+    html+='<div class="pron">'+esc(cur.id_text)+' — '+esc(cur.ru)+'<br>['+esc(cur.pron)+']</div>';
     fb.innerHTML=html; fb.style.display="block";
     $("next").classList.remove("hidden");
     $("typeBox").classList.add("hidden"); $("pronBox").classList.add("hidden");
-    if(curSkill()!=="pron") speak(cur.id_text);
+    speak(cur.id_text);
   }
   function commit(ok){
     var cur=curItem();
@@ -479,12 +480,12 @@
       if(d==="dict"){target=cur.id_text;ok=matchId(cur.id_text,val);}
       else {target=cur.ru;ok=matchRu(cur.ru,val);}
     }
-    commit(ok); showFeedback(ok,target);
+    commit(ok); showFeedback(ok,target,val);
   }
   function dunno(){
     if(answered)return; var cur=curItem(), sk=curSkill(), d=session.curDir;
     var target=((sk==="spelling"&&d==="id2ru")||(sk==="listening"&&d==="comp"))?cur.ru:cur.id_text;
-    commit(false); showFeedback(false,target);
+    commit(false); showFeedback(false,target,"Не помню");
   }
   // pronunciation
   var recBusy=false;
@@ -494,15 +495,15 @@
     var rec=new SR(); rec.lang="id-ID"; rec.interimResults=false; rec.maxAlternatives=3;
     rec.onresult=function(e){var best="",bs=0;
       for(var i=0;i<e.results[0].length;i++){var t=e.results[0][i].transcript,s=sim(t,cur.id_text);if(s>bs){bs=s;best=t;}}
-      finishPron(bs>=0.75?1:0,"Распознано: «"+best+"» · совпадение "+Math.round(bs*100)+"%");};
+      finishPron(bs>=0.75?1:0,best,"Совпадение "+Math.round(bs*100)+"%");};
     rec.onerror=function(){$("mic").classList.remove("rec");recBusy=false;$("micHint").textContent="Не расслышал, попробуйте ещё раз";};
     rec.onend=function(){$("mic").classList.remove("rec");recBusy=false;};
     try{rec.start();}catch(e){recBusy=false;$("mic").classList.remove("rec");}
   }
-  function finishPron(ok,extraText){
+  function finishPron(ok,userAns,note){
     if(answered)return; recBusy=false;$("mic").classList.remove("rec");
     var cur=curItem(); commit(!!ok);
-    showFeedback(!!ok,cur.id_text,extraText?'<div class="pron">'+extraText+'</div>':"");
+    showFeedback(!!ok,cur.id_text,userAns,note?'<div class="pron">'+esc(note)+'</div>':"");
   }
 
   // advance
