@@ -104,18 +104,15 @@
     <div class="card">
       <div class="prompt">Тип сессии</div>
       <div class="grid" style="margin-top:8px">
-        <button class="mode active" data-mode="full">🎯 Все навыки<small>20 слов × 3 упражнения</small></button>
-        <button class="mode" data-mode="spelling">✍️ Написание<small>только письмо</small></button>
-        <button class="mode" data-mode="listening">👂 На слух<small>только аудио</small></button>
-        <button class="mode" data-mode="pron">🎤 Произношение<small>только речь</small></button>
+        <button class="mode active" data-mode="full">🎯 Все упражнения<small>20 слов × 4</small></button>
+        <button class="mode" data-mode="write_ru2id">✍️ Написание<small>рус → бахаса</small></button>
+        <button class="mode" data-mode="write_id2ru">✍️ Написание<small>бахаса → рус</small></button>
+        <button class="mode" data-mode="listen_id2ru">👂 На слух<small>бахаса → рус</small></button>
+        <button class="mode" data-mode="speak_ru2id">🎤 Произношение<small>рус → бахаса</small></button>
       </div>
       <div style="margin-top:12px">
         <div class="prompt">Слов в сессии</div>
         <div class="seg" id="sizeSeg"></div>
-      </div>
-      <div id="dirWrap" style="margin-top:12px;display:none">
-        <div class="prompt">Направление</div>
-        <div class="seg" id="dirSeg"></div>
       </div>
     </div>
     <button class="btn" id="start">Начать сессию</button>
@@ -203,6 +200,13 @@
     <div class="card">
       <div class="stats" id="fullStats"></div>
     </div>
+    <div class="card" id="exCard" style="display:none">
+      <div class="prompt">Помечено на удаление</div>
+      <div id="exCount" style="font-size:15px;margin:6px 0"></div>
+      <div style="color:var(--mut);font-size:12px;margin-bottom:8px">Скопируйте список и пришлите в чат — почищу в CSV и Notion.</div>
+      <button class="btn sec" id="exCopy">Скопировать список</button>
+      <button class="btn ghost" id="exUndo">Вернуть всё в словарь</button>
+    </div>
     <button class="btn sec" id="backHome">← Назад</button>
     <button class="btn ghost" id="reset">Сбросить прогресс</button>
   </section>
@@ -219,15 +223,15 @@
   "use strict";
   var BASE = (window.LALA_BASE || []).filter(function(x){return x && x.id_text;});
   var BYID = {}; BASE.forEach(function(x){BYID[x.id]=x;});
-  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2";
+  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2", EXKEY="lala_excluded_v1";
   var MASTER_BOX=4, MAX_BOX=5;
-  var SKILL_NAME={spelling:"Написание",listening:"На слух",pron:"Произношение"};
 
   // ---------- storage ----------
   function jload(k,d){ try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;} }
   function jsave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
-  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null);
-  var smode=set.smode||"full", dir=set.dir||"both", size=set.size||20;
+  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null), excluded=jload(EXKEY,{});
+  function saveEx(){jsave(EXKEY,excluded);}
+  var smode=set.smode||"full", size=set.size||20;
 
   // ---------- text helpers ----------
   function norm(s){
@@ -277,17 +281,25 @@
       if(bi>=0 && bs>=0.8){used[bi]=true;} else {missing.push(ct);}
     });
     var extra=[]; for(i=0;i<userT.length;i++) if(!used[i]) extra.push(userT[i]);
-    var matched=candT.length-missing.length;
-    var hasContent=candT.some(function(t){return !optional(t);});
-    var missOk=missing.every(optional), extraOk=extra.every(optional);
-    if(!missOk||!extraOk) return false;
-    if(hasContent) return matched>=1 ? missing.every(optional) : false;
-    return matched>=1; // кандидат только из служебных слов — нужно совпадение
+    var missCont=missing.filter(function(t){return !optional(t);});
+    var extraCont=extra.filter(function(t){return !optional(t);});
+    var candCont=candT.filter(function(t){return !optional(t);}).length;
+    var matchedTotal=candT.length-missing.length;
+    if(extraCont.length>0) return false;          // лишнее содержательное слово — не принимаем
+    if(candCont===0) return matchedTotal>=1;       // эталон из служебных слов/чисел
+    var allowMiss = candCont>=3 ? 1 : 0;           // в длинных фразах прощаем одно пропущенное слово
+    if(missCont.length>allowMiss) return false;
+    return (candCont-missCont.length)>=1;
   }
   function matchRu(raw,user){
     var userT=tokset(user); if(!userT.length) return false;
     var cands=ruCandidates(raw);
+    var uJoin=norm(user).replace(/ /g,"");
     for(var k=0;k<cands.length;k++){
+      var cn=norm(cands[k]); if(!cn) continue;
+      var cJoin=cn.replace(/ /g,"");                 // слитное/раздельное и морф. вариант: «донизу» ≈ «до низа»
+      if(uJoin && cJoin===uJoin) return true;
+      if(uJoin.length>=5 && cJoin.length>=5 && sim(uJoin,cJoin)>=0.82) return true;
       var cT=tokset(cands[k]); if(!cT.length) continue;
       if(tokMatch(userT,cT)) return true;
     }
@@ -309,7 +321,7 @@
     p.last=Date.now(); prog[item.id]=p; jsave(PKEY,prog);
   }
   function pickDistinct(n){
-    var pool=BASE.slice(), chosen=[]; n=Math.min(n,pool.length);
+    var pool=BASE.filter(function(x){return !excluded[x.id];}), chosen=[]; n=Math.min(n,pool.length);
     for(var k=0;k<n;k++){
       var total=0, ws=pool.map(function(x){var w=weight(x);total+=w;return w;});
       var r=Math.random()*total, acc=0, idx=0;
@@ -342,22 +354,22 @@
     var v=voices.filter(function(x){return /^id/i.test(x.lang);})[0];if(v)u.voice=v;
     speechSynthesis.speak(u);}catch(e){} }
 
+  // ---------- exercises (4 фиксированных, без переключателей) ----------
+  var EX={
+    write_ru2id:{name:"Написание рус→бахаса", kind:"Написание · рус → бахаса", input:"type",   prompt:"ru",    answer:"id"},
+    write_id2ru:{name:"Написание бахаса→рус", kind:"Написание · бахаса → рус", input:"type",   prompt:"id",    answer:"ru"},
+    listen_id2ru:{name:"На слух бахаса→рус",  kind:"На слух · бахаса → рус",  input:"listen", prompt:"audio", answer:"ru"},
+    speak_ru2id:{name:"Произношение рус→бахаса", kind:"Произношение · рус → бахаса", input:"speak", prompt:"ru", answer:"id"}
+  };
+  var EX_ALL=["write_ru2id","write_id2ru","listen_id2ru","speak_ru2id"];
+  if(!(smode==="full"||EX[smode])) smode="full";
+
   // ---------- home UI ----------
   var SIZES=[10,20,30];
-  var DIRS={spelling:[["both","Оба"],["ru2id","РУ → ID"],["id2ru","ID → РУ"]],
-            listening:[["both","Оба"],["dict","Диктант"],["comp","Понимание"]]};
   function renderModes(){document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===smode);});}
   function renderSizes(){var s=$("sizeSeg");s.innerHTML="";SIZES.forEach(function(n){
     var b=document.createElement("button");b.textContent=n;b.className=(n===size?"active":"");
     b.onclick=function(){size=n;set.size=n;jsave(SKEY,set);renderSizes();};s.appendChild(b);});}
-  function renderDirs(){
-    $("dirWrap").style.display = (smode==="full"||smode==="pron") ? "none":"block";
-    if(smode==="full"||smode==="pron")return;
-    var opts=DIRS[smode]||[], seg=$("dirSeg"); seg.innerHTML="";
-    if(!opts.some(function(o){return o[0]===dir;}))dir="both";
-    opts.forEach(function(o){var b=document.createElement("button");b.textContent=o[1];
-      b.className=(o[0]===dir?"active":"");b.onclick=function(){dir=o[0];set.dir=dir;jsave(SKEY,set);renderDirs();};seg.appendChild(b);});
-  }
   function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
   function renderHomeStats(){var s=calcStats();$("homeStats").innerHTML=
     stat(s.mastered,"выучено")+stat(s.started,"в работе")+stat(s.acc+"%","точность")+stat(s.total,"всего в базе");}
@@ -365,82 +377,72 @@
     var c=$("resumeCard");
     if(session && !session.done){
       c.style.display="block";
-      var sk=SKILL_NAME[session.skills[session.skillIdx]];
-      var info = session.skills.length>1 ? ("Навык "+(session.skillIdx+1)+"/"+session.skills.length+" · "+sk+" · слово "+(session.wordIdx+1)+"/"+session.size)
-                                         : (sk+" · слово "+(session.wordIdx+1)+"/"+session.size);
+      var nm=EX[curEx()].name;
+      var info = session.exercises.length>1 ? ("Упр. "+(session.exIdx+1)+"/"+session.exercises.length+" · "+nm+" · слово "+(session.wordIdx+1)+"/"+session.size)
+                                            : (nm+" · слово "+(session.wordIdx+1)+"/"+session.size);
       $("resumeInfo").textContent=info;
     } else c.style.display="none";
   }
-  function renderHome(){renderModes();renderSizes();renderDirs();renderHomeStats();renderResume();}
+  function renderHome(){renderModes();renderSizes();renderHomeStats();renderResume();}
 
   // ---------- session ----------
   function saveSession(){jsave(SESKEY,session);}
   function newSession(){
     var ids=pickDistinct(size);
-    var skills = smode==="full" ? ["spelling","listening","pron"] : [smode];
-    session={ts:Date.now(),size:ids.length,mode:smode,wordIds:ids,skills:skills,
-      skillIdx:0,wordIdx:0,blockOrder:shuffle(range(ids.length)),
-      total:0,correct:0,perSkill:skills.map(function(){return {c:0,t:0};}),
-      curDir:null,done:false};
-    saveSession(); pickDir(); renderQuestion();
+    var exs = smode==="full" ? EX_ALL.slice() : [smode];
+    session={ts:Date.now(),size:ids.length,mode:smode,wordIds:ids,exercises:exs,
+      exIdx:0,wordIdx:0,blockOrder:shuffle(range(ids.length)),
+      total:0,correct:0,perEx:exs.map(function(){return {c:0,t:0};}),done:false};
+    saveSession(); renderQuestion();
   }
-  function curSkill(){return session.skills[session.skillIdx];}
+  function curEx(){return session.exercises[session.exIdx];}
   function curItem(){return BYID[session.wordIds[session.blockOrder[session.wordIdx]]];}
-  function pickDir(){
-    var sk=curSkill(), base = session.mode==="full" ? "both" : (set.dir||"both"), d;
-    if(sk==="spelling") d=(base==="ru2id"||base==="id2ru")?base:pick(["ru2id","id2ru"]);
-    else if(sk==="listening") d=(base==="dict"||base==="comp")?base:pick(["dict","comp"]);
-    else d="mean";
-    session.curDir=d; saveSession();
-  }
 
   var answered=false;
   function show(id){["home","exercise","inter","summary","stats"].forEach(function(s){$(s).classList.toggle("hidden",s!==id);});}
 
   function renderProgress(){
-    var sk=curSkill(), n=session.skills.length;
-    $("pChip").textContent = n>1 ? ("Навык "+(session.skillIdx+1)+"/"+n) : SKILL_NAME[sk];
-    $("pSkillName").textContent = SKILL_NAME[sk];
+    var e=EX[curEx()], n=session.exercises.length;
+    $("pChip").textContent = n>1 ? ("Упр. "+(session.exIdx+1)+"/"+n) : e.name;
+    $("pSkillName").textContent = e.name;
     $("pWord").textContent = "Слово "+(session.wordIdx+1)+"/"+session.size;
     var pct = session.total ? Math.round(100*session.correct/session.total) : 0;
     $("pAcc").textContent = "Верно "+pct+"%";
     $("pBar").style.width = Math.round(100*session.wordIdx/session.size)+"%";
     var dots=$("pDots"); dots.innerHTML="";
-    session.skills.forEach(function(_,i){var sp=document.createElement("span");
-      sp.className=i<session.skillIdx?"done":(i===session.skillIdx?"cur":"");dots.appendChild(sp);});
+    session.exercises.forEach(function(_,i){var sp=document.createElement("span");
+      sp.className=i<session.exIdx?"done":(i===session.exIdx?"cur":"");dots.appendChild(sp);});
   }
 
   function renderQuestion(){
     show("exercise"); answered=false;
-    var cur=curItem(), sk=curSkill(), d=session.curDir;
+    if(excluded[curItem().id]){ advance(); return; } // слово удалено — пропустить
+    var cur=curItem(), e=EX[curEx()];
     renderProgress();
     $("fb").style.display="none";$("fb").className="fb";
     $("next").classList.add("hidden");
     $("typeBox").classList.add("hidden");$("listenBox").classList.add("hidden");$("pronBox").classList.add("hidden");
     $("selfWrap").classList.add("hidden");$("selfWrap").innerHTML="";
     $("exExtra").innerHTML=""; var ans=$("answer"); ans.value="";
+    $("exKind").textContent=e.kind;
 
-    if(sk==="spelling"){
-      $("exKind").textContent = d==="ru2id" ? "Написание · РУ → Bahasa" : "Написание · Bahasa → РУ";
-      $("exQ").textContent = d==="ru2id" ? cur.ru : cur.id_text;
-      $("exQ").className = "q"+(d==="ru2id"?"":" small");
-      if(d==="id2ru") $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">'+cur.pron+'</div>';
+    if(e.input==="type"){
+      if(e.prompt==="ru"){ $("exQ").textContent=cur.ru; $("exQ").className="q"; }
+      else { $("exQ").textContent=cur.id_text; $("exQ").className="q small";
+        $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">'+esc(cur.pron)+'</div>'; }
       $("typeBox").classList.remove("hidden");
-      ans.placeholder = d==="ru2id"?"Напишите на бахасе…":"Напишите перевод…";
+      ans.placeholder = e.answer==="id" ? "Напишите на бахасе…" : "Напишите перевод…";
       setTimeout(function(){ans.focus();},50);
-    } else if(sk==="listening"){
-      $("exKind").textContent = d==="dict" ? "На слух · Диктант" : "На слух · Понимание";
+    } else if(e.input==="listen"){
       $("exQ").textContent="🔊"; $("exQ").className="q";
       $("listenBox").classList.remove("hidden"); $("typeBox").classList.remove("hidden");
-      ans.placeholder = d==="dict"?"Напишите, что услышали (бахаса)…":"Напишите перевод…";
+      ans.placeholder="Напишите перевод…";
       speak(cur.id_text); setTimeout(function(){ans.focus();},50);
-    } else {
-      // Произношение: видим только русский, вспоминаем и говорим на бахасе
-      $("exKind").textContent = "Произношение · скажите на бахасе";
+    } else { // speak: видим русский, говорим на бахасе
       $("exQ").textContent=cur.ru; $("exQ").className="q";
       $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">вспомните, как это на индонезийском, и произнесите вслух</div>';
       $("pronBox").classList.remove("hidden");
-      $("hearIt").style.display="none"; // не подсказываем до ответа
+      $("hearIt").style.display="none";
       $("micHint").textContent = hasSR ? "Нажмите и произнесите вслух" : "Распознавание недоступно — оцените себя сами";
       $("mic").style.display = hasSR ? "block":"none";
       if(!hasSR){ var w=$("selfWrap"); w.classList.remove("hidden");
@@ -458,33 +460,35 @@
     if(userAns) html+='<div class="pron">Ваш ответ: «'+esc(userAns)+'»</div>';
     if(extra) html+=extra;
     html+='<div class="pron">'+esc(cur.id_text)+' — '+esc(cur.ru)+'<br>['+esc(cur.pron)+']</div>';
+    html+='<button class="btn ghost" id="delWord" style="margin-top:10px;color:#fca5a5;border-color:#7f1d1d">🗑 Удалить из словаря</button>';
     fb.innerHTML=html; fb.style.display="block";
+    var dw=$("delWord"); if(dw) dw.onclick=excludeCurrent;
     $("next").classList.remove("hidden");
     $("typeBox").classList.add("hidden"); $("pronBox").classList.add("hidden");
     speak(cur.id_text);
+  }
+  function excludeCurrent(){
+    var cur=curItem();
+    excluded[cur.id]=cur.id_text+" — "+cur.ru; saveEx();
+    advance();
   }
   function commit(ok){
     var cur=curItem();
     record(cur,ok);
     session.total++; if(ok)session.correct++;
-    var ps=session.perSkill[session.skillIdx]; ps.t++; if(ok)ps.c++;
+    var ps=session.perEx[session.exIdx]; ps.t++; if(ok)ps.c++;
     saveSession();
   }
   function checkTyped(){
     if(answered)return; var val=$("answer").value; if(!val.trim())return;
-    var cur=curItem(), sk=curSkill(), d=session.curDir, ok, target;
-    if(sk==="spelling"){
-      if(d==="ru2id"){target=cur.id_text;ok=matchId(cur.id_text,val);}
-      else {target=cur.ru;ok=matchRu(cur.ru,val);}
-    } else { // listening
-      if(d==="dict"){target=cur.id_text;ok=matchId(cur.id_text,val);}
-      else {target=cur.ru;ok=matchRu(cur.ru,val);}
-    }
+    var cur=curItem(), e=EX[curEx()], ok, target;
+    if(e.answer==="id"){ target=cur.id_text; ok=matchId(cur.id_text,val); }
+    else { target=cur.ru; ok=matchRu(cur.ru,val); }
     commit(ok); showFeedback(ok,target,val);
   }
   function dunno(){
-    if(answered)return; var cur=curItem(), sk=curSkill(), d=session.curDir;
-    var target=((sk==="spelling"&&d==="id2ru")||(sk==="listening"&&d==="comp"))?cur.ru:cur.id_text;
+    if(answered)return; var cur=curItem(), e=EX[curEx()];
+    var target = e.answer==="ru" ? cur.ru : cur.id_text;
     commit(false); showFeedback(false,target,"Не помню");
   }
   // pronunciation
@@ -508,21 +512,24 @@
 
   // advance
   function advance(){
-    session.wordIdx++;
-    if(session.wordIdx>=session.size){
-      var finishedSkill=session.skillIdx;
-      session.skillIdx++;
-      if(session.skillIdx>=session.skills.length){ session.done=true; saveSession(); showSummary(); return; }
-      session.wordIdx=0; session.blockOrder=shuffle(range(session.size)); saveSession();
-      if(session.skills.length>1){ showInterstitial(finishedSkill); return; }
+    while(true){
+      session.wordIdx++;
+      if(session.wordIdx>=session.size){
+        var finishedIdx=session.exIdx;
+        session.exIdx++;
+        if(session.exIdx>=session.exercises.length){ session.done=true; saveSession(); showSummary(); return; }
+        session.wordIdx=0; session.blockOrder=shuffle(range(session.size)); saveSession();
+        if(session.exercises.length>1){ showInterstitial(finishedIdx); return; }
+      }
+      if(!excluded[curItem().id]) break; // пропускаем удалённые из словаря
     }
-    pickDir(); renderQuestion();
+    renderQuestion();
   }
   function showInterstitial(finishedIdx){
     show("inter");
-    var ps=session.perSkill[finishedIdx], pct=ps.t?Math.round(100*ps.c/ps.t):0;
-    $("interTitle").textContent="«"+SKILL_NAME[session.skills[finishedIdx]]+"» пройдено";
-    $("interSub").textContent="Верно "+ps.c+" из "+ps.t+" ("+pct+"%) · дальше: "+SKILL_NAME[curSkill()];
+    var ps=session.perEx[finishedIdx], pct=ps.t?Math.round(100*ps.c/ps.t):0;
+    $("interTitle").textContent="«"+EX[session.exercises[finishedIdx]].name+"» пройдено";
+    $("interSub").textContent="Верно "+ps.c+" из "+ps.t+" ("+pct+"%) · дальше: "+EX[curEx()].name;
   }
   function showSummary(){
     show("summary");
@@ -530,8 +537,8 @@
     $("sumPct").textContent=pct+"%";
     $("sumLine").textContent="Верно "+session.correct+" из "+session.total+" · слов: "+session.size;
     var html="";
-    session.skills.forEach(function(sk,i){var ps=session.perSkill[i],p=ps.t?Math.round(100*ps.c/ps.t):0;
-      html+='<div class="resrow"><span>'+SKILL_NAME[sk]+'</span><b>'+ps.c+'/'+ps.t+' · '+p+'%</b></div>';});
+    session.exercises.forEach(function(k,i){var ps=session.perEx[i],p=ps.t?Math.round(100*ps.c/ps.t):0;
+      html+='<div class="resrow"><span>'+EX[k].name+'</span><b>'+ps.c+'/'+ps.t+' · '+p+'%</b></div>';});
     $("sumSkills").innerHTML=html;
   }
 
@@ -544,19 +551,24 @@
     $("fullStats").innerHTML=stat(s.mastered,"выучено (закреплено)")+stat(s.started,"в работе")+
       stat(s.acc+"%","точность ответов")+stat(s.attempts,"всего ответов")+
       stat(s.total,"слов в базе")+stat(Math.max(0,s.total-s.started),"ещё не открыто");
+    var exIds=Object.keys(excluded);
+    if(exIds.length){ $("exCard").style.display="block"; $("exCount").textContent=exIds.length+" слов/фраз помечено"; }
+    else $("exCard").style.display="none";
+  }
+  function excludedList(){
+    return Object.keys(excluded).map(function(id){return "["+id+"] "+excluded[id];}).join("\n");
   }
 
   // ---------- events ----------
-  document.querySelectorAll(".mode").forEach(function(b){b.onclick=function(){smode=b.dataset.mode;set.smode=smode;jsave(SKEY,set);renderModes();renderDirs();};});
+  document.querySelectorAll(".mode").forEach(function(b){b.onclick=function(){smode=b.dataset.mode;set.smode=smode;jsave(SKEY,set);renderModes();};});
   $("start").onclick=function(){newSession();};
-  $("resume").onclick=function(){ if(!session)return; pickDirIfNeeded(); renderQuestion(); };
-  function pickDirIfNeeded(){ if(!session.curDir) pickDir(); }
+  $("resume").onclick=function(){ if(!session)return; renderQuestion(); };
   $("restart").onclick=function(){ session=null; jsave(SESKEY,null); renderResume(); };
   $("check").onclick=checkTyped;
   $("answer").addEventListener("keydown",function(e){if(e.key==="Enter"){if(answered)advance();else checkTyped();}});
   $("dunno").onclick=dunno;
   $("next").onclick=advance;
-  $("interGo").onclick=function(){pickDir();renderQuestion();};
+  $("interGo").onclick=function(){renderQuestion();};
   $("quit").onclick=function(){show("home");renderHome();};
   $("replay").onclick=function(){speak(curItem().id_text);};
   $("hearIt").onclick=function(){speak(curItem().id_text);};
@@ -566,6 +578,13 @@
   $("sumNew").onclick=function(){newSession();};
   $("sumHome").onclick=function(){session=null;jsave(SESKEY,null);show("home");renderHome();};
   $("reset").onclick=function(){if(confirm("Сбросить весь прогресс? Это нельзя отменить.")){prog={};jsave(PKEY,prog);session=null;jsave(SESKEY,null);renderStats();renderHome();}};
+  $("exCopy").onclick=function(){
+    var txt=excludedList();
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){alert("Список скопирован. Вставьте его в чат для очистки.");},function(){prompt("Скопируйте вручную:",txt);});
+    } else prompt("Скопируйте вручную:",txt);
+  };
+  $("exUndo").onclick=function(){if(confirm("Вернуть все исключённые слова обратно в практику?")){excluded={};saveEx();renderStats();renderHome();}};
 
   // ---------- init ----------
   function init(){
@@ -575,8 +594,8 @@
     if(location.protocol==="file:")warn.push("Открыто как файл — для микрофона и установки иконки нужен https-адрес.");
     if(!hasSR)warn.push("Распознавание речи недоступно — произношение будет с самооценкой.");
     if(warn.length){$("banner").style.display="block";$("banner").innerHTML=warn.join("<br>");}
-    // подчистим устаревшую сессию (другой размер базы и т.п.)
-    if(session && (!session.wordIds || !session.skills)) {session=null;jsave(SESKEY,null);}
+    // подчистим устаревшую сессию (старый формат без exercises)
+    if(session && (!session.wordIds || !session.exercises)) {session=null;jsave(SESKEY,null);}
     renderHome();
   }
   init();
