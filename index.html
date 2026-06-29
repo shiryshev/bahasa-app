@@ -103,8 +103,8 @@
 
     <div class="card">
       <div class="prompt">Тип сессии</div>
-      <div class="grid" style="margin-top:8px">
-        <button class="mode active" data-mode="full">🎯 Все упражнения<small>20 слов × 4</small></button>
+      <button class="mode active" data-mode="full" style="display:block;width:100%;margin-top:8px;text-align:center">🎯 Все упражнения</button>
+      <div class="grid" style="margin-top:10px">
         <button class="mode" data-mode="write_ru2id">✍️ Написание<small>рус → бахаса</small></button>
         <button class="mode" data-mode="write_id2ru">✍️ Написание<small>бахаса → рус</small></button>
         <button class="mode" data-mode="listen_id2ru">👂 На слух<small>бахаса → рус</small></button>
@@ -470,6 +470,12 @@
   function excludeCurrent(){
     var cur=curItem();
     excluded[cur.id]=cur.id_text+" — "+cur.ru; saveEx();
+    // заменим удалённое слово свежим, чтобы в сессии осталось выбранное количество
+    var pos=session.blockOrder[session.wordIdx];
+    var inSession={}; session.wordIds.forEach(function(id){inSession[id]=1;});
+    var poolw=BASE.filter(function(x){return !excluded[x.id] && !inSession[x.id];});
+    if(poolw.length){ session.wordIds[pos]=poolw[Math.floor(Math.random()*poolw.length)].id; }
+    saveSession();
     advance();
   }
   function commit(ok){
