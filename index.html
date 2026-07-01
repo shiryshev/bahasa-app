@@ -602,6 +602,10 @@
     if(location.protocol==="file:")warn.push("Открыто как файл — для микрофона и установки иконки нужен https-адрес.");
     if(!hasSR)warn.push("Распознавание речи недоступно — произношение будет с самооценкой.");
     if(warn.length){$("banner").style.display="block";$("banner").innerHTML=warn.join("<br>");}
+    // авто-очистка отметок удаления для слов, которых уже нет в базе (после чистки base.js)
+    var exChanged=false;
+    Object.keys(excluded).forEach(function(id){ if(!BYID[id]){ delete excluded[id]; exChanged=true; } });
+    if(exChanged) saveEx();
     // подчистим устаревшую сессию (старый формат без exercises)
     if(session && (!session.wordIds || !session.exercises)) {session=null;jsave(SESKEY,null);}
     renderHome();
