@@ -1,4 +1,4 @@
-// Авто-сгенерировано из bahasa-dictionary.csv. Чтобы обновить базу — пересобрать этот файл.
+// Авто-сгенерировано из bahasa-dictionary.csv. Исключённые (excluded=1) не попадают в приложение.
 window.LALA_BASE = [
 {
 "id": 0,
@@ -86,14 +86,6 @@ window.LALA_BASE = [
 "pron": "карéна кóтор",
 "ru": "Потому что грязные",
 "type": "выражение",
-"note": ""
-},
-{
-"id": 11,
-"id_text": "Tolong tambah klorin dan soda",
-"pron": "тóлонг тамбáх клорúн дан сóда",
-"ru": "Добавьте хлор и соду",
-"type": "фраза",
 "note": ""
 },
 {
@@ -209,14 +201,6 @@ window.LALA_BASE = [
 "note": ""
 },
 {
-"id": 26,
-"id_text": "soda",
-"pron": "сóда",
-"ru": "сода",
-"type": "слово",
-"note": ""
-},
-{
 "id": 27,
 "id_text": "klorin",
 "pron": "клорúн",
@@ -309,14 +293,6 @@ window.LALA_BASE = [
 "id_text": "Apakah kartunya bisa atas nama ibu?",
 "pron": "апáках кáртуня бúса áтас нáма úбу",
 "ru": "Можно оформить карту на имя госпожи (жены)?",
-"type": "фраза",
-"note": "В банке, формальный регистр"
-},
-{
-"id": 39,
-"id_text": "Apakah kami bisa membuat kartu debit untuk istri saya?",
-"pron": "апáках кáми бúса мэмбýат кáрту дэбúт ýнтук úстри сáйя",
-"ru": "Можем ли мы оформить дебетовую карту для моей жены?",
 "type": "фраза",
 "note": "В банке, формальный регистр"
 },
@@ -505,4 +481,4 @@ window.LALA_BASE = [
 "note": ""
 }
 ];
-window.LALA_BASE_DATE = "2026-06-28";
+window.LALA_BASE_DATE = "2026-07-01";
