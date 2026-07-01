@@ -156,6 +156,7 @@
         <div style="text-align:center;color:var(--mut);font-size:13px" id="micHint">Нажмите и произнесите вслух</div>
         <div id="selfWrap" class="hidden row" style="margin-top:10px"></div>
         <button class="play" id="hearIt" style="margin-top:10px">🔊 Послушать образец</button>
+        <button class="btn ghost" id="pronSkip" style="margin-top:10px">Не помню / дальше →</button>
       </div>
 
       <div class="fb" id="fb"></div>
@@ -579,6 +580,7 @@
   $("replay").onclick=function(){speak(curItem().id_text);};
   $("hearIt").onclick=function(){speak(curItem().id_text);};
   $("mic").onclick=startRec;
+  $("pronSkip").onclick=function(){ finishPron(0,"","Не помню / пропущено"); };
   $("navStats").onclick=function(){renderStats();show("stats");};
   $("backHome").onclick=function(){show("home");renderHome();};
   $("sumNew").onclick=function(){newSession();};
