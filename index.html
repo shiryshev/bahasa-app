@@ -73,6 +73,8 @@
   .skilldots span.done{background:var(--ok)}
   .skilldots span.cur{background:var(--acc)}
   .hidden{display:none!important}
+  #exercise:not(.hidden){display:flex;flex-direction:column;flex:1}
+  .lrow-btn{background:transparent;border:1px solid var(--line);color:var(--acc);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;white-space:nowrap}
   footer{margin-top:auto;padding-top:12px;text-align:center;color:var(--mut);font-size:11px}
   .reslist{margin-top:4px}
   .resrow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
@@ -82,7 +84,7 @@
 </head>
 <body>
 <div class="wrap">
-  <header>
+  <header id="appHeader">
     <div>
       <h1>Lala Bahasa</h1>
       <div class="sub">тренажёр индонезийских слов</div>
@@ -124,17 +126,7 @@
 
   <!-- EXERCISE -->
   <section id="exercise" class="hidden">
-    <div class="card" style="padding:12px 16px">
-      <div class="phead">
-        <span class="chip" id="pChip">—</span>
-        <span style="color:var(--mut);font-size:13px" id="pAcc">Верно —</span>
-      </div>
-      <div class="bar"><i id="pBar" style="width:0%"></i></div>
-      <div class="pmeta"><span id="pWord">Слово 0/0</span><span id="pSkillName"></span></div>
-      <div class="skilldots" id="pDots"></div>
-    </div>
-
-    <div class="card">
+    <div class="card" style="margin-top:0">
       <div class="prompt" id="exKind">—</div>
       <div class="q" id="exQ">—</div>
       <div id="exExtra"></div>
@@ -154,14 +146,26 @@
       <div id="pronBox" class="hidden">
         <button class="mic" id="mic">🎤</button>
         <div style="text-align:center;color:var(--mut);font-size:13px" id="micHint">Нажмите и произнесите вслух</div>
-        <div id="selfWrap" class="hidden row" style="margin-top:10px"></div>
-        <button class="play" id="hearIt" style="margin-top:10px">🔊 Послушать образец</button>
-        <button class="btn ghost" id="pronSkip" style="margin-top:10px">Не помню / дальше →</button>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ok2" id="pronKnow">✅ Знаю</button>
+          <button class="btn sec" id="pronSkip" style="width:46%">Не помню →</button>
+        </div>
+        <button class="play" id="hearIt" style="margin-top:10px;display:none">🔊 Послушать образец</button>
       </div>
 
       <div class="fb" id="fb"></div>
     </div>
     <button class="btn hidden" id="next">Дальше →</button>
+
+    <div class="card" style="padding:12px 16px;margin-top:auto">
+      <div class="phead">
+        <span class="chip" id="pChip">—</span>
+        <span style="color:var(--mut);font-size:13px" id="pAcc">Верно —</span>
+      </div>
+      <div class="bar"><i id="pBar" style="width:0%"></i></div>
+      <div class="pmeta"><span id="pWord">Слово 0/0</span><span id="pSkillName"></span></div>
+      <div class="skilldots" id="pDots"></div>
+    </div>
     <button class="btn ghost" id="quit">Выйти (с сохранением)</button>
   </section>
 
@@ -209,10 +213,19 @@
       <button class="btn ghost" id="exUndo">Вернуть всё в словарь</button>
     </div>
     <button class="btn sec" id="backHome">← Назад</button>
-    <button class="btn ghost" id="reset">Сбросить прогресс</button>
   </section>
 
-  <footer>
+  <!-- LEARNED LIST -->
+  <section id="learned" class="hidden">
+    <div class="card">
+      <div class="prompt">Выученные слова и выражения</div>
+      <div id="learnedList" class="reslist"></div>
+      <div id="learnedEmpty" style="color:var(--mut);font-size:14px;display:none">Пока ничего не закреплено.</div>
+    </div>
+    <button class="btn sec" id="learnedBack">← Назад</button>
+  </section>
+
+  <footer id="appFooter">
     База: <span id="baseN">0</span> слов · обновлена <span id="baseD">—</span><br>
     Lala Bahasa · работает офлайн
   </footer>
@@ -400,7 +413,11 @@
   function curItem(){return BYID[session.wordIds[session.blockOrder[session.wordIdx]]];}
 
   var answered=false;
-  function show(id){["home","exercise","inter","summary","stats"].forEach(function(s){$(s).classList.toggle("hidden",s!==id);});}
+  function show(id){
+    ["home","exercise","inter","summary","stats","learned"].forEach(function(s){$(s).classList.toggle("hidden",s!==id);});
+    $("appHeader").style.display = id==="home" ? "" : "none";
+    $("appFooter").style.display = id==="home" ? "" : "none";
+  }
 
   function renderProgress(){
     var e=EX[curEx()], n=session.exercises.length;
@@ -423,7 +440,6 @@
     $("fb").style.display="none";$("fb").className="fb";
     $("next").classList.add("hidden");
     $("typeBox").classList.add("hidden");$("listenBox").classList.add("hidden");$("pronBox").classList.add("hidden");
-    $("selfWrap").classList.add("hidden");$("selfWrap").innerHTML="";
     $("exExtra").innerHTML=""; var ans=$("answer"); ans.value="";
     $("exKind").textContent=e.kind;
 
@@ -443,14 +459,8 @@
       $("exQ").textContent=cur.ru; $("exQ").className="q";
       $("exExtra").innerHTML='<div style="color:var(--mut);font-size:12px;margin-top:4px">вспомните, как это на индонезийском, и произнесите вслух</div>';
       $("pronBox").classList.remove("hidden");
-      $("hearIt").style.display="none";
-      $("micHint").textContent = hasSR ? "Нажмите и произнесите вслух" : "Распознавание недоступно — оцените себя сами";
+      $("micHint").textContent = hasSR ? "Произнесите вслух — или отметьте сами" : "Распознавание недоступно — отметьте сами";
       $("mic").style.display = hasSR ? "block":"none";
-      if(!hasSR){ var w=$("selfWrap"); w.classList.remove("hidden");
-        w.innerHTML='<button class="btn" id="selfOk">✅ Верно</button><button class="btn sec" id="selfBad" style="width:46%">❌ Нет</button>';
-        $("selfOk").onclick=function(){finishPron(1,"","Самооценка: верно");};
-        $("selfBad").onclick=function(){finishPron(0,"","Самооценка: неверно");};
-      }
     }
   }
 
@@ -555,15 +565,34 @@
     var note=lv.label; if(lv.next)note+=" · до «"+lv.next[1]+"» ещё "+(lv.next[0]-s.mastered)+" слов";
     $("lvlNote").textContent=note;
     $("lvlBar").style.width=Math.min(100,lv.next?Math.round(100*s.mastered/(lv.next[0]||1)):100)+"%";
-    $("fullStats").innerHTML=stat(s.mastered,"выучено (закреплено)")+stat(s.started,"в работе")+
+    $("fullStats").innerHTML=
+      '<div class="stat" id="statMastered" style="cursor:pointer;border:1px solid var(--acc)"><div class="n">'+s.mastered+'</div><div class="l">выучено — список ›</div></div>'+
+      stat(s.started,"в работе")+
       stat(s.acc+"%","точность ответов")+stat(s.attempts,"всего ответов")+
       stat(s.total,"слов в базе")+stat(Math.max(0,s.total-s.started),"ещё не открыто");
+    $("statMastered").onclick=function(){ renderLearned(); show("learned"); };
     var exIds=Object.keys(excluded);
     if(exIds.length){ $("exCard").style.display="block"; $("exCount").textContent=exIds.length+" слов/фраз помечено"; }
     else $("exCard").style.display="none";
   }
   function excludedList(){
     return Object.keys(excluded).map(function(id){return "["+id+"] "+excluded[id];}).join("\n");
+  }
+  function renderLearned(){
+    var ids=Object.keys(prog).filter(function(id){return prog[id].box>=MASTER_BOX && BYID[id];});
+    ids.sort(function(a,b){return BYID[a].id_text.localeCompare(BYID[b].id_text);});
+    var list=$("learnedList"); list.innerHTML="";
+    $("learnedEmpty").style.display = ids.length ? "none":"block";
+    ids.forEach(function(id){
+      var w=BYID[id];
+      var row=document.createElement("div"); row.className="resrow";
+      var t=document.createElement("span"); t.style.paddingRight="10px";
+      t.innerHTML="<b>"+esc(w.id_text)+"</b> — "+esc(w.ru);
+      var btn=document.createElement("button"); btn.className="lrow-btn";
+      btn.textContent="↩ на обучение"; btn.title="Вернуть на обучение";
+      btn.onclick=function(){ prog[id].box=0; jsave(PKEY,prog); renderLearned(); };
+      row.appendChild(t); row.appendChild(btn); list.appendChild(row);
+    });
   }
 
   // ---------- events ----------
@@ -580,12 +609,13 @@
   $("replay").onclick=function(){speak(curItem().id_text);};
   $("hearIt").onclick=function(){speak(curItem().id_text);};
   $("mic").onclick=startRec;
+  $("pronKnow").onclick=function(){ finishPron(1,"","Отмечено: знаю"); };
   $("pronSkip").onclick=function(){ finishPron(0,"","Не помню / пропущено"); };
+  $("learnedBack").onclick=function(){ renderStats(); show("stats"); };
   $("navStats").onclick=function(){renderStats();show("stats");};
   $("backHome").onclick=function(){show("home");renderHome();};
   $("sumNew").onclick=function(){newSession();};
   $("sumHome").onclick=function(){session=null;jsave(SESKEY,null);show("home");renderHome();};
-  $("reset").onclick=function(){if(confirm("Сбросить весь прогресс? Это нельзя отменить.")){prog={};jsave(PKEY,prog);session=null;jsave(SESKEY,null);renderStats();renderHome();}};
   $("exCopy").onclick=function(){
     var txt=excludedList();
     if(navigator.clipboard&&navigator.clipboard.writeText){
