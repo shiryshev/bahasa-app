@@ -72,6 +72,12 @@
   .skilldots span{flex:1;height:5px;border-radius:4px;background:var(--bg)}
   .skilldots span.done{background:var(--ok)}
   .skilldots span.cur{background:var(--acc)}
+  /* daily goal bar */
+  .goalbar{display:flex;gap:6px;margin-top:8px}
+  .goalseg{flex:1;display:flex;gap:3px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .goalcell{flex:1;height:12px;border-radius:4px;background:var(--bg2);transition:background .25s}
+  .goalcell.on{background:var(--ok)}
+  .goalmeta{color:var(--mut);font-size:12px;margin-top:6px;text-align:right}
   .hidden{display:none!important}
   #exercise:not(.hidden){display:flex;flex-direction:column;flex:1}
   .lrow-btn{background:transparent;border:1px solid var(--line);color:var(--acc);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;white-space:nowrap}
@@ -104,20 +110,15 @@
     </div>
 
     <div class="card">
-      <div class="prompt">Тип сессии</div>
-      <button class="mode active" data-mode="full" style="display:block;width:100%;margin-top:8px;text-align:center">🎯 Все упражнения</button>
-      <div class="grid" style="margin-top:10px">
-        <button class="mode" data-mode="write_ru2id">✍️ Написание<small>рус → бахаса</small></button>
-        <button class="mode" data-mode="write_id2ru">✍️ Написание<small>бахаса → рус</small></button>
-        <button class="mode" data-mode="listen_id2ru">👂 На слух<small>бахаса → рус</small></button>
-        <button class="mode" data-mode="speak_ru2id">🎤 Произношение<small>рус → бахаса</small></button>
-      </div>
-      <div style="margin-top:12px">
-        <div class="prompt">Слов в сессии</div>
-        <div class="seg" id="sizeSeg"></div>
+      <div class="prompt">Цель: уроков в день</div>
+      <div class="seg" id="goalSeg"></div>
+      <div style="margin-top:16px">
+        <div class="prompt">Прогресс за день</div>
+        <div class="goalbar" id="goalBar"></div>
+        <div class="goalmeta" id="goalMeta"></div>
       </div>
     </div>
-    <button class="btn" id="start">Начать сессию</button>
+    <button class="btn" id="start">Начать урок</button>
     <div class="card" style="margin-top:12px">
       <div class="prompt">Общий прогресс</div>
       <div class="stats" id="homeStats"></div>
@@ -226,8 +227,7 @@
   </section>
 
   <footer id="appFooter">
-    База: <span id="baseN">0</span> слов · обновлена <span id="baseD">—</span><br>
-    Lala Bahasa · работает офлайн
+    Обновлено <span id="baseD">—</span>
   </footer>
 </div>
 
@@ -237,15 +237,19 @@
   "use strict";
   var BASE = (window.LALA_BASE || []).filter(function(x){return x && x.id_text;});
   var BYID = {}; BASE.forEach(function(x){BYID[x.id]=x;});
-  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2", EXKEY="lala_excluded_v1";
+  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2", EXKEY="lala_excluded_v1", DKEY="lala_daily_v1";
   var MASTER_BOX=4, MAX_BOX=5;
 
   // ---------- storage ----------
   function jload(k,d){ try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;} }
   function jsave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
-  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null), excluded=jload(EXKEY,{});
+  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null), excluded=jload(EXKEY,{}), daily=jload(DKEY,{date:"",done:0});
   function saveEx(){jsave(EXKEY,excluded);}
-  var smode=set.smode||"full", size=set.size||20;
+  var smode="full", size=10;                 // урок = 4 упражнения по 10 слов
+  // ---------- daily goal ----------
+  function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function ensureDaily(){var t=today();if(daily.date!==t){daily={date:t,done:0};jsave(DKEY,daily);}}
+  function bumpDaily(){ensureDaily();daily.done++;jsave(DKEY,daily);}
 
   // ---------- text helpers ----------
   function norm(s){
@@ -379,11 +383,24 @@
   if(!(smode==="full"||EX[smode])) smode="full";
 
   // ---------- home UI ----------
-  var SIZES=[10,20,30];
-  function renderModes(){document.querySelectorAll(".mode").forEach(function(b){b.classList.toggle("active",b.dataset.mode===smode);});}
-  function renderSizes(){var s=$("sizeSeg");s.innerHTML="";SIZES.forEach(function(n){
-    var b=document.createElement("button");b.textContent=n;b.className=(n===size?"active":"");
-    b.onclick=function(){size=n;set.size=n;jsave(SKEY,set);renderSizes();};s.appendChild(b);});}
+  var GOALS=[1,2,3,4,5];
+  function goalVal(){return set.goal||1;}
+  function renderGoalSeg(){var s=$("goalSeg");s.innerHTML="";GOALS.forEach(function(n){
+    var b=document.createElement("button");b.textContent=n;b.className=(n===goalVal()?"active":"");
+    b.onclick=function(){set.goal=n;jsave(SKEY,set);renderGoalSeg();renderGoalBar();};s.appendChild(b);});}
+  function renderGoalBar(){
+    ensureDaily();
+    var goal=goalVal(), done=daily.done, bar=$("goalBar"); bar.innerHTML="";
+    var idx=0;
+    for(var s=0;s<goal;s++){
+      var seg=document.createElement("div"); seg.className="goalseg";
+      for(var c=0;c<4;c++){var cell=document.createElement("div");
+        cell.className="goalcell"+(idx<done?" on":"");idx++;seg.appendChild(cell);}
+      bar.appendChild(seg);
+    }
+    var lessons=Math.floor(done/4);
+    $("goalMeta").textContent="Уроков сегодня: "+Math.min(lessons,goal)+" / "+goal;
+  }
   function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
   function renderHomeStats(){var s=calcStats();$("homeStats").innerHTML=
     stat(s.mastered,"выучено")+stat(s.started,"в работе")+stat(s.acc+"%","точность")+stat(s.total,"всего в базе");}
@@ -397,7 +414,7 @@
       $("resumeInfo").textContent=info;
     } else c.style.display="none";
   }
-  function renderHome(){renderModes();renderSizes();renderHomeStats();renderResume();}
+  function renderHome(){renderGoalSeg();renderGoalBar();renderHomeStats();renderResume();}
 
   // ---------- session ----------
   function saveSession(){jsave(SESKEY,session);}
@@ -533,6 +550,7 @@
       session.wordIdx++;
       if(session.wordIdx>=session.size){
         var finishedIdx=session.exIdx;
+        bumpDaily();                         // упражнение завершено → +1 подсегмент дневной цели
         session.exIdx++;
         if(session.exIdx>=session.exercises.length){ session.done=true; saveSession(); showSummary(); return; }
         session.wordIdx=0; session.blockOrder=shuffle(range(session.size)); saveSession();
@@ -596,7 +614,6 @@
   }
 
   // ---------- events ----------
-  document.querySelectorAll(".mode").forEach(function(b){b.onclick=function(){smode=b.dataset.mode;set.smode=smode;jsave(SKEY,set);renderModes();};});
   $("start").onclick=function(){newSession();};
   $("resume").onclick=function(){ if(!session)return; renderQuestion(); };
   $("restart").onclick=function(){ session=null; jsave(SESKEY,null); renderResume(); };
@@ -626,7 +643,8 @@
 
   // ---------- init ----------
   function init(){
-    $("baseN").textContent=BASE.length; $("baseD").textContent=window.LALA_BASE_DATE||"—";
+    $("baseD").textContent=window.LALA_BASE_DATE||"—";
+    ensureDaily();
     var warn=[];
     if(!BASE.length)warn.push("База слов не загрузилась (base.js).");
     if(location.protocol==="file:")warn.push("Открыто как файл — для микрофона и установки иконки нужен https-адрес.");
