@@ -380,12 +380,6 @@ window.LALA_BASE = [
 "ru": "рулетка"
 },
 {
-"id": 66,
-"id_text": "Saya akan kasih tahu Lina kalau saya sudah beli mata bor dan sudah siap",
-"pron": "сáйя акáн кáсих тáху Лúна калáу сáйя сýдах бэли мáта бор дан сýдах сиáп",
-"ru": "скажу Лине, когда куплю сверло и буду готов"
-},
-{
 "id": 67,
 "id_text": "Kamu pemberani",
 "pron": "кáму пэмбэрáни",
@@ -396,12 +390,6 @@ window.LALA_BASE = [
 "id_text": "Terbang sendirian naik pesawat",
 "pron": "тэрбáнг сэндирúан нáик пэсáват",
 "ru": "летел один на самолёте"
-},
-{
-"id": 69,
-"id_text": "Sudah besar sekali sekarang",
-"pron": "сýдах бэсáр сэкáли сэкáранг",
-"ru": "уже совсем большой"
 },
 {
 "id": 70,
@@ -890,12 +878,6 @@ window.LALA_BASE = [
 "ru": "сломанный"
 },
 {
-"id": 151,
-"id_text": "hari",
-"pron": "хáри",
-"ru": "день (hari ini — сегодня)"
-},
-{
 "id": 152,
 "id_text": "seorang",
 "pron": "сеóранг",
@@ -932,12 +914,6 @@ window.LALA_BASE = [
 "ru": "так, вот так (разг. от begitu); oh gitu — а, вот оно как"
 },
 {
-"id": 158,
-"id_text": "banget",
-"pron": "бáнгет",
-"ru": "очень (разг., после слова): enak banget — очень вкусно; грамотно — sangat"
-},
-{
 "id": 159,
 "id_text": "mahal",
 "pron": "махáл",
@@ -950,22 +926,10 @@ window.LALA_BASE = [
 "ru": "дёшево, дешёвый"
 },
 {
-"id": 161,
-"id_text": "kalau",
-"pron": "кáлау",
-"ru": "если; что касается (разг. kalo); kalau begitu — если так, тогда"
-},
-{
 "id": 162,
 "id_text": "sekali",
 "pron": "секáли",
 "ru": "очень (после прил.); один раз (sekali lagi — ещё раз)"
-},
-{
-"id": 163,
-"id_text": "sekarang",
-"pron": "секáранг",
-"ru": "сейчас, теперь (sekarang juga — прямо сейчас)"
 },
 {
 "id": 164,
@@ -1032,8 +996,74 @@ window.LALA_BASE = [
 "id_text": "lagi",
 "pron": "лáги",
 "ru": "ещё, снова"
+},
+{
+"id": 175,
+"id_text": "foto buat kenang-kenangan",
+"pron": "фóто буáт кенáнг-кенáнган",
+"ru": "фото на память"
+},
+{
+"id": 176,
+"id_text": "Foto dulu yuk!",
+"pron": "фóто дýлу юк",
+"ru": "Давай сфоткаемся!"
+},
+{
+"id": 177,
+"id_text": "kenang-kenangan",
+"pron": "кенáнг-кенáнган",
+"ru": "память, памятная вещь"
+},
+{
+"id": 178,
+"id_text": "dulu",
+"pron": "дýлу",
+"ru": "сначала, сперва"
+},
+{
+"id": 179,
+"id_text": "yuk",
+"pron": "юк",
+"ru": "давай, пошли (разг.)"
+},
+{
+"id": 180,
+"id_text": "anak ganteng",
+"pron": "анáк гантéнг",
+"ru": "красивый мальчик"
+},
+{
+"id": 181,
+"id_text": "ganteng",
+"pron": "гантéнг",
+"ru": "красивый (о мальчиках/мужчинах); ganteng banget — красавчик"
+},
+{
+"id": 182,
+"id_text": "cantik",
+"pron": "чантúк",
+"ru": "красивая (о девочках/женщинах)"
+},
+{
+"id": 183,
+"id_text": "anak cantik",
+"pron": "анáк чантúк",
+"ru": "красивая девочка (cantik banget — красавица)"
+},
+{
+"id": 184,
+"id_text": "Datang lagi ya!",
+"pron": "датáнг лáги я",
+"ru": "Приезжай ещё!"
+},
+{
+"id": 185,
+"id_text": "datang",
+"pron": "датáнг",
+"ru": "приходить, приезжать"
 }
 ];
 window.LALA_BASE_DATE = "2026-07-10";
-window.LALA_BASE_MAXID = 174;
-window.LALA_NEXT_ID = 175;  // самый большой выданный + 1; только растёт
+window.LALA_BASE_MAXID = 185;
+window.LALA_NEXT_ID = 186;  // самый большой выданный + 1; только растёт
