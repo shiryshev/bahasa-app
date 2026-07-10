@@ -228,8 +228,9 @@
     <div class="card" id="exCard" style="display:none">
       <div class="prompt">Помечено на удаление</div>
       <div id="exCount" style="font-size:15px;margin:6px 0"></div>
-      <div style="color:var(--mut);font-size:12px;margin-bottom:8px">Скопируйте список и пришлите в чат — почищу в CSV и Notion.</div>
-      <button class="btn sec" id="exCopy">Скопировать список</button>
+      <div style="color:var(--mut);font-size:12px;margin-bottom:8px">Нажмите «Отправить» — откроется готовый запрос в GitHub, останется нажать «Submit». Дальше словарь почистится и пересоберётся автоматически.</div>
+      <button class="btn" id="exSend">🗑 Отправить на удаление</button>
+      <button class="btn sec" id="exCopy" style="margin-top:8px">Скопировать список (запасной вариант)</button>
       <button class="btn ghost" id="exUndo">Вернуть всё в словарь</button>
     </div>
     <button class="btn sec" id="backHome">← Назад</button>
@@ -774,6 +775,20 @@
     if(navigator.clipboard&&navigator.clipboard.writeText){
       navigator.clipboard.writeText(txt).then(function(){alert("Список скопирован. Вставьте его в чат для очистки.");},function(){prompt("Скопируйте вручную:",txt);});
     } else prompt("Скопируйте вручную:",txt);
+  };
+  var GH_OWNER="shiryshev", GH_REPO="bahasa-app", DEL_LABEL="deletion-request";
+  function deletionIssueUrl(){
+    var ids=Object.keys(excluded);
+    var body="Слова, помеченные на удаление из словаря. Обработать: удалить из Notion «Bahasa Dictionary», пересобрать base.js, задеплоить, закрыть issue.\n\n"+
+      ids.map(function(id){return "- ["+id+"] "+excluded[id];}).join("\n")+
+      "\n\nids: "+ids.join(",");
+    var title="Удалить из словаря: "+ids.length+" слов";
+    return "https://github.com/"+GH_OWNER+"/"+GH_REPO+"/issues/new?labels="+encodeURIComponent(DEL_LABEL)+
+      "&title="+encodeURIComponent(title)+"&body="+encodeURIComponent(body);
+  }
+  $("exSend").onclick=function(){
+    if(!Object.keys(excluded).length){alert("Список пуст.");return;}
+    window.open(deletionIssueUrl(),"_blank");
   };
   $("exUndo").onclick=function(){if(confirm("Вернуть все исключённые слова обратно в практику?")){excluded={};saveEx();renderStats();renderHome();}};
 
