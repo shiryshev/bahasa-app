@@ -1,6 +1,6 @@
 // Lala Bahasa service worker — кэш для офлайна и установки иконки.
 // Версию меняем при обновлении базы, чтобы телефон подхватил новые слова.
-var CACHE = "lala-bahasa-v14";
+var CACHE = "lala-bahasa-v15";
 var ASSETS = [
   "./",
   "./index.html",

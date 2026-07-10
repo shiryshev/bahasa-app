@@ -375,9 +375,11 @@
   // ---------- long-term progress (Leitner) ----------
   function weight(item){var p=prog[item.id];if(!p)return 7;return [6,5,4,3,2,1][p.box]||1;}
   function record(item,ok){
-    var p=prog[item.id]||{box:0,seen:0,correct:0,wrong:0};
+    var p=prog[item.id]||{box:0,seen:0,correct:0,wrong:0}, prevBox=p.box;
     p.seen++; if(ok){p.correct++;p.box=Math.min(MAX_BOX,p.box+1);} else {p.wrong++;p.box=Math.max(0,p.box-1);}
-    p.last=Date.now(); prog[item.id]=p; jsave(PKEY,prog);
+    p.last=Date.now();
+    if(prevBox<MASTER_BOX && p.box>=MASTER_BOX) p.masteredAt=Date.now(); // момент перехода в «выучено»
+    prog[item.id]=p; jsave(PKEY,prog);
   }
   function isPhrase(item){ return /\s/.test((item.id_text||"").trim()); }
   var WORD_INDEX=null;
@@ -724,19 +726,25 @@
   function excludedList(){
     return Object.keys(excluded).map(function(id){return "["+id+"] "+excluded[id];}).join("\n");
   }
+  function fmtDate(ts){                         // ms → ДД.ММ.ГГГГ по Бали (GMT+8)
+    if(!ts) return "";
+    var d=new Date(ts+8*3600000), p=function(n){return (n<10?"0":"")+n;};
+    return p(d.getUTCDate())+"."+p(d.getUTCMonth()+1)+"."+d.getUTCFullYear();
+  }
   function renderLearned(){
     var ids=Object.keys(prog).filter(function(id){return prog[id].box>=MASTER_BOX && BYID[id];});
-    ids.sort(function(a,b){return BYID[a].id_text.localeCompare(BYID[b].id_text);});
+    ids.sort(function(a,b){return (prog[b].masteredAt||0)-(prog[a].masteredAt||0);}); // новые сверху
     var list=$("learnedList"); list.innerHTML="";
     $("learnedEmpty").style.display = ids.length ? "none":"block";
     ids.forEach(function(id){
-      var w=BYID[id];
+      var w=BYID[id], mAt=prog[id].masteredAt;
       var row=document.createElement("div"); row.className="resrow";
       var t=document.createElement("span"); t.style.paddingRight="10px";
-      t.innerHTML="<b>"+esc(w.id_text)+"</b> — "+esc(w.ru);
+      t.innerHTML="<b>"+esc(w.id_text)+"</b> — "+esc(w.ru)+
+        (mAt?'<div class="pron" style="color:var(--mut);font-size:12px;margin-top:2px">выучено '+fmtDate(mAt)+'</div>':"");
       var btn=document.createElement("button"); btn.className="lrow-btn";
       btn.textContent="↩ на обучение"; btn.title="Вернуть на обучение";
-      btn.onclick=function(){ prog[id].box=0; jsave(PKEY,prog); renderLearned(); };
+      btn.onclick=function(){ prog[id].box=0; delete prog[id].masteredAt; jsave(PKEY,prog); renderLearned(); };
       row.appendChild(t); row.appendChild(btn); list.appendChild(row);
     });
   }
@@ -784,6 +792,11 @@
     if(exChanged) saveEx();
     // подчистим устаревшую сессию (старый формат без exercises)
     if(session && (!session.wordIds || !session.exercises || !session.groups)) {session=null;jsave(SESKEY,null);}
+    // разовая простановка даты «выучено» словам, освоенным до появления masteredAt
+    var pChanged=false;
+    Object.keys(prog).forEach(function(id){var p=prog[id];
+      if(p.box>=MASTER_BOX && !p.masteredAt){ p.masteredAt=p.last||Date.now(); pChanged=true; }});
+    if(pChanged) jsave(PKEY,prog);
     renderHome();
   }
   init();
