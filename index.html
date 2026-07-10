@@ -78,6 +78,17 @@
   .goalcell{flex:1;height:12px;border-radius:4px;background:var(--bg2);transition:background .25s}
   .goalcell.on{background:var(--ok)}
   .goalmeta{color:var(--mut);font-size:12px;margin-top:6px;text-align:right}
+  /* calendar + streak */
+  .calmonth{text-align:center;color:var(--mut);font-size:12px;margin-bottom:6px}
+  .calhead{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+  .calhead div{text-align:center;color:var(--mut);font-size:10px}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .calcell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:8px;background:var(--bg2);color:var(--mut)}
+  .calcell.met{background:var(--ok);color:#04210f;font-weight:700}
+  .calcell.today{box-shadow:0 0 0 2px var(--acc)}
+  .calcell.empty{background:transparent}
+  .streakline{color:var(--mut);font-size:12px;margin-top:8px;text-align:center}
+  .streakline b{color:var(--txt)}
   .hidden{display:none!important}
   #exercise:not(.hidden){display:flex;flex-direction:column;flex:1}
   .lrow-btn{background:transparent;border:1px solid var(--line);color:var(--acc);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;white-space:nowrap}
@@ -117,6 +128,14 @@
         <div class="goalbar" id="goalBar"></div>
         <div class="goalmeta" id="goalMeta"></div>
       </div>
+    </div>
+    <div class="card">
+      <div class="phead">
+        <div class="prompt" style="margin:0">Календарь</div>
+        <span class="chip" id="streakChip">🔥 0</span>
+      </div>
+      <div id="cal"></div>
+      <div class="streakline" id="streakLine"></div>
     </div>
     <button class="btn" id="start">Начать урок</button>
     <div class="card" style="margin-top:12px">
@@ -237,19 +256,35 @@
   "use strict";
   var BASE = (window.LALA_BASE || []).filter(function(x){return x && x.id_text;});
   var BYID = {}; BASE.forEach(function(x){BYID[x.id]=x;});
-  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2", EXKEY="lala_excluded_v1", DKEY="lala_daily_v1";
+  var PKEY="lala_progress_v1", SKEY="lala_settings_v1", SESKEY="lala_session_v2", EXKEY="lala_excluded_v1", DKEY="lala_daily_v1", HKEY="lala_history_v1";
   var MASTER_BOX=4, MAX_BOX=5;
 
   // ---------- storage ----------
   function jload(k,d){ try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;} }
   function jsave(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
-  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null), excluded=jload(EXKEY,{}), daily=jload(DKEY,{date:"",done:0});
+  var prog=jload(PKEY,{}), set=jload(SKEY,{}), session=jload(SESKEY,null), excluded=jload(EXKEY,{}), daily=jload(DKEY,{date:"",done:0}), hist=jload(HKEY,{});
   function saveEx(){jsave(EXKEY,excluded);}
   var smode="full", size=10;                 // урок = 4 упражнения по 10 слов
-  // ---------- daily goal ----------
-  function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
-  function ensureDaily(){var t=today();if(daily.date!==t){daily={date:t,done:0};jsave(DKEY,daily);}}
-  function bumpDaily(){ensureDaily();daily.done++;jsave(DKEY,daily);}
+  // ---------- daily goal (день привязан к GMT+8, Бали) ----------
+  function baliNow(){var n=new Date();return new Date(n.getTime()+n.getTimezoneOffset()*60000+8*3600000);}
+  function ymd(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function today(){return ymd(baliNow());}
+  function lessonsDone(){return Math.floor(daily.done/4);}
+  function syncHist(){                        // фиксируем состояние текущего дня в истории
+    hist[daily.date]={done:daily.done, goal:goalVal(), met:lessonsDone()>=goalVal()};
+    jsave(HKEY,hist);
+  }
+  function ensureDaily(){var t=today();if(daily.date!==t){daily={date:t,done:0};jsave(DKEY,daily);}syncHist();}
+  function bumpDaily(){ensureDaily();daily.done++;jsave(DKEY,daily);syncHist();}
+  function streakCount(){                     // сколько дней подряд цель достигнута (по Бали)
+    var d=baliNow(); var t=ymd(d);
+    if(!(hist[t]&&hist[t].met)) d=new Date(d.getTime()-86400000); // сегодня ещё не закрыто — считаем со вчера
+    var n=0;
+    while(hist[ymd(d)]&&hist[ymd(d)].met){ n++; d=new Date(d.getTime()-86400000); }
+    return n;
+  }
+  function pluralDays(n){var a=n%100,b=n%10;
+    if(a>=11&&a<=14)return "дней"; if(b===1)return "день"; if(b>=2&&b<=4)return "дня"; return "дней";}
 
   // ---------- text helpers ----------
   function norm(s){
@@ -338,15 +373,55 @@
     p.seen++; if(ok){p.correct++;p.box=Math.min(MAX_BOX,p.box+1);} else {p.wrong++;p.box=Math.max(0,p.box-1);}
     p.last=Date.now(); prog[item.id]=p; jsave(PKEY,prog);
   }
-  function pickDistinct(n){
-    var pool=BASE.filter(function(x){return !excluded[x.id];}), chosen=[]; n=Math.min(n,pool.length);
-    for(var k=0;k<n;k++){
-      var total=0, ws=pool.map(function(x){var w=weight(x);total+=w;return w;});
-      var r=Math.random()*total, acc=0, idx=0;
-      for(var i=0;i<pool.length;i++){acc+=ws[i];if(r<=acc){idx=i;break;}}
-      chosen.push(pool[idx].id); pool.splice(idx,1);
+  function isPhrase(item){ return /\s/.test((item.id_text||"").trim()); }
+  var WORD_INDEX=null;
+  function wordIndex(){                        // norm(одиночное слово) -> запись словаря
+    if(WORD_INDEX) return WORD_INDEX;
+    WORD_INDEX={};
+    BASE.forEach(function(x){ if(!isPhrase(x)){ var k=norm(x.id_text); if(k && !WORD_INDEX[k]) WORD_INDEX[k]=x; } });
+    return WORD_INDEX;
+  }
+  function phraseParts(item){                  // id слов фразы, которые есть в словаре отдельными записями
+    var idx=wordIndex(), toks=norm(item.id_text).split(" ").filter(Boolean), ids=[], seen={};
+    toks.forEach(function(tk){ var w=idx[tk]; if(w && w.id!==item.id && !excluded[w.id] && !seen[w.id]){ ids.push(w.id); seen[w.id]=1; } });
+    return ids;
+  }
+  function weightedPick(pool){
+    var total=0, ws=pool.map(function(x){var w=weight(x);total+=w;return w;}), r=Math.random()*total, acc=0, i;
+    for(i=0;i<pool.length;i++){acc+=ws[i]; if(r<=acc) return i;}
+    return pool.length-1;
+  }
+  var MAX_PHRASES=1;                           // сколько выражений на урок (остальное — одиночные слова)
+  function buildLesson(n){
+    var groups=[], used={}, count=0;
+    var phrasePool=BASE.filter(function(x){return !excluded[x.id] && isPhrase(x);});
+    var wordPool=BASE.filter(function(x){return !excluded[x.id] && !isPhrase(x);});
+    var left=MAX_PHRASES;
+    while(count<n && left>0 && phrasePool.length){          // фраза + её слова, рядом
+      var ph=phrasePool.splice(weightedPick(phrasePool),1)[0];
+      if(used[ph.id]) continue;
+      var group=[ph.id]; used[ph.id]=1;
+      phraseParts(ph).forEach(function(wid){ if(!used[wid]){ group.push(wid); used[wid]=1; } });
+      groups.push(group); count+=group.length; left--;
     }
-    return chosen;
+    var wp=wordPool.filter(function(x){return !used[x.id];});
+    while(count<n && wp.length){                            // добор одиночными словами
+      var w=wp.splice(weightedPick(wp),1)[0];
+      if(used[w.id]) continue;
+      groups.push([w.id]); used[w.id]=1; count++;
+    }
+    if(count<n){                                            // если слов не хватило — добор чем угодно
+      var rest=BASE.filter(function(x){return !excluded[x.id] && !used[x.id];});
+      while(count<n && rest.length){ var r=rest.splice(weightedPick(rest),1)[0]; groups.push([r.id]); used[r.id]=1; count++; }
+    }
+    var ids=[]; groups.forEach(function(g){ g.forEach(function(id){ ids.push(id); }); });
+    return {ids:ids, groups:groups};
+  }
+  function orderFromGroups(groups, ids){        // порядок упражнения: группы тасуем, слова держим сразу за фразой
+    var pos={}; ids.forEach(function(id,i){ if(pos[id]===undefined) pos[id]=i; });
+    var order=[];
+    shuffle(groups).forEach(function(g){ g.forEach(function(id){ order.push(pos[id]); }); });
+    return order;
   }
   function calcStats(){
     var mastered=0,started=0,correct=0,attempts=0;
@@ -403,7 +478,30 @@
   }
   function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
   function renderHomeStats(){var s=calcStats();$("homeStats").innerHTML=
-    stat(s.mastered,"выучено")+stat(s.started,"в работе")+stat(s.acc+"%","точность")+stat(s.total,"всего в базе");}
+    '<div class="stat" id="homeMastered" style="cursor:pointer;border:1px solid var(--acc)"><div class="n">'+s.mastered+'</div><div class="l">выучено ›</div></div>'+
+    stat(s.started,"в работе")+stat(s.acc+"%","точность")+stat(s.total,"всего в базе");
+    $("homeMastered").onclick=function(){ learnedFrom="home"; renderLearned(); show("learned"); };}
+  var MONTHS=["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+  function renderCalendar(){
+    var now=baliNow(), y=now.getFullYear(), m=now.getMonth(), tday=now.getDate();
+    var startDow=(new Date(y,m,1).getDay()+6)%7;   // неделя с понедельника
+    var days=new Date(y,m+1,0).getDate();
+    var h='<div class="calmonth">'+MONTHS[m]+' '+y+'</div>';
+    h+='<div class="calhead">'+["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map(function(d){return "<div>"+d+"</div>";}).join("")+'</div>';
+    h+='<div class="calgrid">';
+    for(var i=0;i<startDow;i++) h+='<div class="calcell empty"></div>';
+    for(var day=1;day<=days;day++){
+      var key=y+"-"+(m+1)+"-"+day, cls="calcell";
+      if(hist[key]&&hist[key].met) cls+=" met";
+      if(day===tday) cls+=" today";
+      h+='<div class="'+cls+'">'+day+'</div>';
+    }
+    h+='</div>';
+    $("cal").innerHTML=h;
+    var n=streakCount();
+    $("streakChip").textContent="🔥 "+n;
+    $("streakLine").textContent = n>0 ? ("Занимался подряд "+n+" "+pluralDays(n)) : "Достигните дневной цели, чтобы начать серию";
+  }
   function renderResume(){
     var c=$("resumeCard");
     if(session && !session.done){
@@ -414,22 +512,22 @@
       $("resumeInfo").textContent=info;
     } else c.style.display="none";
   }
-  function renderHome(){renderGoalSeg();renderGoalBar();renderHomeStats();renderResume();}
+  function renderHome(){renderGoalSeg();renderGoalBar();renderCalendar();renderHomeStats();renderResume();}
 
   // ---------- session ----------
   function saveSession(){jsave(SESKEY,session);}
   function newSession(){
-    var ids=pickDistinct(size);
+    var lesson=buildLesson(size), ids=lesson.ids;
     var exs = smode==="full" ? EX_ALL.slice() : [smode];
-    session={ts:Date.now(),size:ids.length,mode:smode,wordIds:ids,exercises:exs,
-      exIdx:0,wordIdx:0,blockOrder:shuffle(range(ids.length)),
+    session={ts:Date.now(),size:ids.length,mode:smode,wordIds:ids,groups:lesson.groups,exercises:exs,
+      exIdx:0,wordIdx:0,blockOrder:orderFromGroups(lesson.groups,ids),
       total:0,correct:0,perEx:exs.map(function(){return {c:0,t:0};}),done:false};
     saveSession(); renderQuestion();
   }
   function curEx(){return session.exercises[session.exIdx];}
   function curItem(){return BYID[session.wordIds[session.blockOrder[session.wordIdx]]];}
 
-  var answered=false;
+  var answered=false, learnedFrom="stats";
   function show(id){
     ["home","exercise","inter","summary","stats","learned"].forEach(function(s){$(s).classList.toggle("hidden",s!==id);});
     $("appHeader").style.display = id==="home" ? "" : "none";
@@ -481,37 +579,61 @@
     }
   }
 
-  function showFeedback(ok,correctText,userAns,extra){
+  function showFeedback(ok,correctText,userAns,extra,allowSay){
     answered=true; var cur=curItem(), fb=$("fb");
     fb.className="fb "+(ok?"ok":"bad");
     var html = ok?"<b>Верно!</b>":"<b>Правильно:</b> "+esc(correctText);
     if(userAns) html+='<div class="pron">Ваш ответ: «'+esc(userAns)+'»</div>';
     if(extra) html+=extra;
     html+='<div class="pron">'+esc(cur.id_text)+' — '+esc(cur.ru)+'<br>['+esc(cur.pron)+']</div>';
+    if(allowSay) html+='<button class="btn ok2" id="sayRight" style="margin-top:10px">✅ Я сказал правильно</button>';
     html+='<button class="btn ghost" id="delWord" style="margin-top:10px;color:#fca5a5;border-color:#7f1d1d">🗑 Удалить из словаря</button>';
     fb.innerHTML=html; fb.style.display="block";
+    var sr=$("sayRight"); if(sr) sr.onclick=markSpokenCorrect;
     var dw=$("delWord"); if(dw) dw.onclick=excludeCurrent;
     $("next").classList.remove("hidden");
     $("typeBox").classList.add("hidden"); $("pronBox").classList.add("hidden");
     speak(cur.id_text);
   }
   function excludeCurrent(){
-    var cur=curItem();
-    excluded[cur.id]=cur.id_text+" — "+cur.ru; saveEx();
-    // заменим удалённое слово свежим, чтобы в сессии осталось выбранное количество
+    var cur=curItem(), oldId=cur.id;
+    excluded[oldId]=cur.id_text+" — "+cur.ru; saveEx();
+    // заменим удалённое слово свежим одиночным словом, чтобы в сессии осталось выбранное количество
     var pos=session.blockOrder[session.wordIdx];
     var inSession={}; session.wordIds.forEach(function(id){inSession[id]=1;});
-    var poolw=BASE.filter(function(x){return !excluded[x.id] && !inSession[x.id];});
-    if(poolw.length){ session.wordIds[pos]=poolw[Math.floor(Math.random()*poolw.length)].id; }
+    var poolw=BASE.filter(function(x){return !excluded[x.id] && !inSession[x.id] && !isPhrase(x);});
+    if(poolw.length){
+      var newId=poolw[Math.floor(Math.random()*poolw.length)].id;
+      session.wordIds[pos]=newId;
+      session.groups.forEach(function(g){var gi=g.indexOf(oldId); if(gi>=0) g[gi]=newId;}); // держим группы в согласии
+    }
     saveSession();
     advance();
   }
+  var lastCommit=null;
   function commit(ok){
     var cur=curItem();
+    lastCommit={id:cur.id, progBefore: prog[cur.id]?JSON.parse(JSON.stringify(prog[cur.id])):null,
+      total:session.total, correct:session.correct, exIdx:session.exIdx,
+      exc:session.perEx[session.exIdx].c, ext:session.perEx[session.exIdx].t};
     record(cur,ok);
     session.total++; if(ok)session.correct++;
     var ps=session.perEx[session.exIdx]; ps.t++; if(ok)ps.c++;
     saveSession();
+  }
+  function undoLastCommit(){
+    if(!lastCommit)return false;
+    if(lastCommit.progBefore) prog[lastCommit.id]=lastCommit.progBefore; else delete prog[lastCommit.id];
+    jsave(PKEY,prog);
+    session.total=lastCommit.total; session.correct=lastCommit.correct;
+    session.perEx[lastCommit.exIdx].c=lastCommit.exc; session.perEx[lastCommit.exIdx].t=lastCommit.ext;
+    saveSession(); return true;
+  }
+  function markSpokenCorrect(){        // микрофон ошибся — засчитать ответ как верный
+    if(!lastCommit)return;
+    undoLastCommit(); commit(true);
+    var cur=curItem();
+    showFeedback(true,cur.id_text,"",'<div class="pron">Отмечено вручную: сказал правильно</div>',false);
   }
   function checkTyped(){
     if(answered)return; var val=$("answer").value; if(!val.trim())return;
@@ -533,15 +655,15 @@
     var rec=new SR(); rec.lang="id-ID"; rec.interimResults=false; rec.maxAlternatives=3;
     rec.onresult=function(e){var best="",bs=0;
       for(var i=0;i<e.results[0].length;i++){var t=e.results[0][i].transcript,s=sim(t,cur.id_text);if(s>bs){bs=s;best=t;}}
-      finishPron(bs>=0.75?1:0,best,"Совпадение "+Math.round(bs*100)+"%");};
+      finishPron(bs>=0.75?1:0,best,"Совпадение "+Math.round(bs*100)+"%",true);};
     rec.onerror=function(){$("mic").classList.remove("rec");recBusy=false;$("micHint").textContent="Не расслышал, попробуйте ещё раз";};
     rec.onend=function(){$("mic").classList.remove("rec");recBusy=false;};
     try{rec.start();}catch(e){recBusy=false;$("mic").classList.remove("rec");}
   }
-  function finishPron(ok,userAns,note){
+  function finishPron(ok,userAns,note,fromMic){
     if(answered)return; recBusy=false;$("mic").classList.remove("rec");
     var cur=curItem(); commit(!!ok);
-    showFeedback(!!ok,cur.id_text,userAns,note?'<div class="pron">'+esc(note)+'</div>':"");
+    showFeedback(!!ok,cur.id_text,userAns,note?'<div class="pron">'+esc(note)+'</div>':"", !!fromMic && !ok);
   }
 
   // advance
@@ -553,7 +675,7 @@
         bumpDaily();                         // упражнение завершено → +1 подсегмент дневной цели
         session.exIdx++;
         if(session.exIdx>=session.exercises.length){ session.done=true; saveSession(); showSummary(); return; }
-        session.wordIdx=0; session.blockOrder=shuffle(range(session.size)); saveSession();
+        session.wordIdx=0; session.blockOrder=orderFromGroups(session.groups,session.wordIds); saveSession();
         if(session.exercises.length>1){ showInterstitial(finishedIdx); return; }
       }
       if(!excluded[curItem().id]) break; // пропускаем удалённые из словаря
@@ -588,7 +710,7 @@
       stat(s.started,"в работе")+
       stat(s.acc+"%","точность ответов")+stat(s.attempts,"всего ответов")+
       stat(s.total,"слов в базе")+stat(Math.max(0,s.total-s.started),"ещё не открыто");
-    $("statMastered").onclick=function(){ renderLearned(); show("learned"); };
+    $("statMastered").onclick=function(){ learnedFrom="stats"; renderLearned(); show("learned"); };
     var exIds=Object.keys(excluded);
     if(exIds.length){ $("exCard").style.display="block"; $("exCount").textContent=exIds.length+" слов/фраз помечено"; }
     else $("exCard").style.display="none";
@@ -628,7 +750,7 @@
   $("mic").onclick=startRec;
   $("pronKnow").onclick=function(){ finishPron(1,"","Отмечено: знаю"); };
   $("pronSkip").onclick=function(){ finishPron(0,"","Не помню / пропущено"); };
-  $("learnedBack").onclick=function(){ renderStats(); show("stats"); };
+  $("learnedBack").onclick=function(){ if(learnedFrom==="home"){show("home");renderHome();} else {renderStats();show("stats");} };
   $("navStats").onclick=function(){renderStats();show("stats");};
   $("backHome").onclick=function(){show("home");renderHome();};
   $("sumNew").onclick=function(){newSession();};
@@ -655,7 +777,7 @@
     Object.keys(excluded).forEach(function(id){ if(!BYID[id]){ delete excluded[id]; exChanged=true; } });
     if(exChanged) saveEx();
     // подчистим устаревшую сессию (старый формат без exercises)
-    if(session && (!session.wordIds || !session.exercises)) {session=null;jsave(SESKEY,null);}
+    if(session && (!session.wordIds || !session.exercises || !session.groups)) {session=null;jsave(SESKEY,null);}
     renderHome();
   }
   init();
