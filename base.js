@@ -684,8 +684,356 @@ window.LALA_BASE = [
 "id_text": "Game favorit kamu apa?",
 "pron": "гэйм фавóрит кáму апá",
 "ru": "какая твоя любимая игра?"
+},
+{
+"id": 117,
+"id_text": "Ada test kolam?",
+"pron": "áда тэс колáм",
+"ru": "У вас есть тест (для бассейна)?"
+},
+{
+"id": 118,
+"id_text": "Terima kasih, enak sekali",
+"pron": "тэри́ма каси́х, эна́к сека́ли",
+"ru": "Спасибо, очень вкусно"
+},
+{
+"id": 119,
+"id_text": "kenyang",
+"pron": "ке́ньянг",
+"ru": "сытый, наевшийся"
+},
+{
+"id": 120,
+"id_text": "saya mau tidur",
+"pron": "сая мау тидур",
+"ru": "я хочу спать"
+},
+{
+"id": 121,
+"id_text": "saya tidak lapar",
+"pron": "сая тидак лапар",
+"ru": "я не голоден"
+},
+{
+"id": 122,
+"id_text": "anda bisa pakai kotak plastik ini",
+"pron": "анда биса пакай котак пластик ини",
+"ru": "можете использовать эти пластиковые короба"
+},
+{
+"id": 123,
+"id_text": "tolong singkirkan semua kabel lama",
+"pron": "толонг сингкиркан семуа кабель лама",
+"ru": "уберите все старые провода"
+},
+{
+"id": 124,
+"id_text": "apakah anda punya kunci dan fischer untuk ini",
+"pron": "апаках анда пунья кунчи дан фишер унтук ини",
+"ru": "у вас есть ключ и дюбеля для этого"
+},
+{
+"id": 125,
+"id_text": "panjang",
+"pron": "панджанг",
+"ru": "длинный"
+},
+{
+"id": 126,
+"id_text": "selalu",
+"pron": "селалу",
+"ru": "всегда"
+},
+{
+"id": 127,
+"id_text": "menang",
+"pron": "менанг",
+"ru": "побеждать, выигрывать"
+},
+{
+"id": 128,
+"id_text": "kunci",
+"pron": "кýнчи",
+"ru": "ключ; замок"
+},
+{
+"id": 129,
+"id_text": "Ada fischer ukuran 8?",
+"pron": "áда фи́шер укýран лапáн?",
+"ru": "У вас есть дюбеля 8 размера?"
+},
+{
+"id": 130,
+"id_text": "Mau pull-up di palang?",
+"pron": "мáу пул-áп ди палáнг?",
+"ru": "Хочешь подтянуться на перекладине?"
+},
+{
+"id": 131,
+"id_text": "Hari ini di sini?",
+"pron": "хáри ини ди сини?",
+"ru": "Сегодня здесь?"
+},
+{
+"id": 132,
+"id_text": "Mau coba burger saya?",
+"pron": "мáу чóба бýргер сáя?",
+"ru": "Хочешь попробовать мой бургер?"
+},
+{
+"id": 133,
+"id_text": "coba",
+"pron": "чóба",
+"ru": "пробовать"
+},
+{
+"id": 134,
+"id_text": "Siapa nama kamu?",
+"pron": "сиáпа нáма камý?",
+"ru": "Как тебя зовут?"
+},
+{
+"id": 135,
+"id_text": "siapa",
+"pron": "сиáпа",
+"ru": "кто"
+},
+{
+"id": 136,
+"id_text": "nama",
+"pron": "нáма",
+"ru": "имя"
+},
+{
+"id": 137,
+"id_text": "Kamu suka ikan?",
+"pron": "камý сýка икáн?",
+"ru": "Ты любишь рыбу?"
+},
+{
+"id": 138,
+"id_text": "suka",
+"pron": "сýка",
+"ru": "любить, нравиться"
+},
+{
+"id": 139,
+"id_text": "ikan",
+"pron": "икáн",
+"ru": "рыба"
+},
+{
+"id": 140,
+"id_text": "Tolong bersihkan ini",
+"pron": "тóлонг берсúхкан úни",
+"ru": "Пожалуйста, почистите это"
+},
+{
+"id": 141,
+"id_text": "bersih",
+"pron": "берсúх",
+"ru": "чистый; bersihkan — очистить"
+},
+{
+"id": 142,
+"id_text": "anak manja",
+"pron": "анáк мáнджа",
+"ru": "избалованный ребёнок"
+},
+{
+"id": 143,
+"id_text": "anak",
+"pron": "анáк",
+"ru": "ребёнок"
+},
+{
+"id": 144,
+"id_text": "manja",
+"pron": "мáнджа",
+"ru": "избалованный, изнеженный"
+},
+{
+"id": 145,
+"id_text": "Tolong bersihkan di sini",
+"pron": "тóлонг берсúхкан ди сúни",
+"ru": "Пожалуйста, приберитесь здесь"
+},
+{
+"id": 146,
+"id_text": "di sini",
+"pron": "ди сúни",
+"ru": "здесь"
+},
+{
+"id": 147,
+"id_text": "Penjepitnya jelek",
+"pron": "пенджепúтня джелéк",
+"ru": "Зажим плохой"
+},
+{
+"id": 148,
+"id_text": "penjepit",
+"pron": "пенджепúт",
+"ru": "зажим, клипса"
+},
+{
+"id": 149,
+"id_text": "jelek",
+"pron": "джелéк",
+"ru": "плохой"
+},
+{
+"id": 150,
+"id_text": "rusak",
+"pron": "рýсак",
+"ru": "сломанный"
+},
+{
+"id": 151,
+"id_text": "hari",
+"pron": "хáри",
+"ru": "день (hari ini — сегодня)"
+},
+{
+"id": 152,
+"id_text": "seorang",
+"pron": "сеóранг",
+"ru": "один человек, некий (счётное слово для людей)"
+},
+{
+"id": 153,
+"id_text": "jangan",
+"pron": "джáнган",
+"ru": "не (запрет)"
+},
+{
+"id": 154,
+"id_text": "kayak gini",
+"pron": "кáяк гúни",
+"ru": "вот так, типа такого (разг.)"
+},
+{
+"id": 155,
+"id_text": "kayak",
+"pron": "кáяк",
+"ru": "как, типа (разг. от seperti)"
+},
+{
+"id": 156,
+"id_text": "gini",
+"pron": "гúни",
+"ru": "вот так (разг. от begini)"
+},
+{
+"id": 157,
+"id_text": "gitu",
+"pron": "гúту",
+"ru": "так, вот так (разг. от begitu); oh gitu — а, вот оно как"
+},
+{
+"id": 158,
+"id_text": "banget",
+"pron": "бáнгет",
+"ru": "очень (разг., после слова): enak banget — очень вкусно; грамотно — sangat"
+},
+{
+"id": 159,
+"id_text": "mahal",
+"pron": "махáл",
+"ru": "дорого, дорогой (terlalu mahal — слишком дорого)"
+},
+{
+"id": 160,
+"id_text": "murah",
+"pron": "мýрах",
+"ru": "дёшево, дешёвый"
+},
+{
+"id": 161,
+"id_text": "kalau",
+"pron": "кáлау",
+"ru": "если; что касается (разг. kalo); kalau begitu — если так, тогда"
+},
+{
+"id": 162,
+"id_text": "sekali",
+"pron": "секáли",
+"ru": "очень (после прил.); один раз (sekali lagi — ещё раз)"
+},
+{
+"id": 163,
+"id_text": "sekarang",
+"pron": "секáранг",
+"ru": "сейчас, теперь (sekarang juga — прямо сейчас)"
+},
+{
+"id": 164,
+"id_text": "Sudah besar sekali",
+"pron": "сýда бесáр секáли",
+"ru": "Уже совсем большой (sudah besar — уже взрослый; разг. udah gede)"
+},
+{
+"id": 165,
+"id_text": "sudah",
+"pron": "сýда",
+"ru": "уже (разг. udah)"
+},
+{
+"id": 166,
+"id_text": "besar",
+"pron": "бесáр",
+"ru": "большой (разг. gede)"
+},
+{
+"id": 167,
+"id_text": "Kamu udah gede",
+"pron": "камý ýда гедé",
+"ru": "Ты уже большой (ребёнку, разг.)"
+},
+{
+"id": 168,
+"id_text": "Udah gede ya",
+"pron": "ýда гедé я",
+"ru": "Совсем большой уже, да? (ласково)"
+},
+{
+"id": 169,
+"id_text": "Mau pulang?",
+"pron": "мáу пýланг?",
+"ru": "Уезжаешь домой?"
+},
+{
+"id": 170,
+"id_text": "Suka di sini?",
+"pron": "сýка ди сúни?",
+"ru": "Понравилось тут?"
+},
+{
+"id": 171,
+"id_text": "Balik lagi ya?",
+"pron": "бáлик лáги я?",
+"ru": "Вернёшься ещё? (приезжай ещё, ладно?)"
+},
+{
+"id": 172,
+"id_text": "pulang",
+"pron": "пýланг",
+"ru": "ехать домой"
+},
+{
+"id": 173,
+"id_text": "balik",
+"pron": "бáлик",
+"ru": "вернуться (разг.)"
+},
+{
+"id": 174,
+"id_text": "lagi",
+"pron": "лáги",
+"ru": "ещё, снова"
 }
 ];
-window.LALA_BASE_DATE = "2026-07-03";
-window.LALA_BASE_MAXID = 116;
-window.LALA_NEXT_ID = 117;  // самый большой выданный + 1; только растёт
+window.LALA_BASE_DATE = "2026-07-10";
+window.LALA_BASE_MAXID = 174;
+window.LALA_NEXT_ID = 175;  // самый большой выданный + 1; только растёт
