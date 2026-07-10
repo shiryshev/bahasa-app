@@ -316,12 +316,18 @@
   }
   function sim(a,b){a=norm(a);b=norm(b);if(!a&&!b)return 1;var L=Math.max(a.length,b.length)||1;return 1-lev(a,b)/L;}
 
-  // кандидаты из русского эталона (учёт ; / "или" и скобок)
+  // кандидаты из русского эталона (учёт ; / "или", запятой-синонимов и скобок)
   function ruCandidates(raw){
     var segs=(raw||"").split(/[\/;]| или /), out=[];
     segs.forEach(function(seg){
-      out.push(seg.replace(/\([^)]*\)/g," "));          // без скобок
-      out.push(seg.replace(/[()]/g," "));               // скобки раскрыты
+      var noParen=seg.replace(/\([^)]*\)/g," ");
+      // запятая = список синонимов, только если ВСЕ части короткие (≤2 слов); иначе это предложение
+      var parts=noParen.split(",").map(function(s){return s.trim();}).filter(Boolean);
+      if(parts.length>1 && parts.every(function(p){return p.split(/\s+/).filter(Boolean).length<=2;})){
+        parts.forEach(function(p){ out.push(p); });     // каждый синоним — самостоятельный вариант
+      }
+      out.push(noParen);                                 // без скобок
+      out.push(seg.replace(/[()]/g," "));                // скобки раскрыты
       var m=seg.match(/\(([^)]*)\)/); if(m) out.push(m[1]); // только содержимое скобок
     });
     return out;
