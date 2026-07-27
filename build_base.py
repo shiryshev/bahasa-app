@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Генератор данных приложения из базы-источника.
-ИСТОЧНИК ИСТИНЫ — файл Obsidian dictionary.md (раздел «## Записи»); его пополняет навык-переводчик.
-Вход:  путь к .md/.txt со строками записей (по умолчанию — файл Obsidian, см. DEFAULT_SRC).
+Генератор данных приложения из рабочей копии словаря.
+ИСТОЧНИК ИСТИНЫ — файл Obsidian dictionary.md (только чтение); в рабочую копию app-dictionary.md
+его переносит sync_dictionary.py (там же удаляются исключённые из обучения слова). base.js
+собирается из рабочей копии.
+Вход:  путь к .md/.txt со строками записей (по умолчанию — app-dictionary.md, см. DEFAULT_SRC).
 Выход: base.js (данные приложения + полный бэкап), dictionary_normalized.txt (строки с #id).
 Формат строки: - #id · **indonesian** · pronunciation · russian   (#id можно опустить у новых записей)
 ID монотонны: скрипт помнит наибольший выданный номер (LALA_NEXT_ID в прошлом base.js);
@@ -10,7 +12,7 @@ ID монотонны: скрипт помнит наибольший выдан
 Пометка «(источник: [[...]])» в русском поле срезается — она нужна только в заметке Obsidian.
 """
 import re, json, sys, datetime
-DEFAULT_SRC = "/Users/shiryshev/Documents/Obsidian/Home/10-Wiki/Languages/Bahasa/dictionary.md"
+DEFAULT_SRC = "app-dictionary.md"
 SRC = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SRC
 OUT = "base.js"
 
