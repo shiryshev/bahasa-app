@@ -2126,18 +2126,30 @@ window.LALA_BASE = [
 "ru": "номер"
 },
 {
-"id": 363,
-"id_text": "sepuluh",
-"pron": "сэпулýх",
-"ru": "десять"
-},
-{
 "id": 364,
 "id_text": "sana",
 "pron": "сáна",
 "ru": "там"
+},
+{
+"id": 365,
+"id_text": "kamu",
+"pron": "кáму",
+"ru": "ты"
+},
+{
+"id": 366,
+"id_text": "tidur",
+"pron": "тидýр",
+"ru": "спать"
+},
+{
+"id": 367,
+"id_text": "dia",
+"pron": "ди́а",
+"ru": "он, она"
 }
 ];
 window.LALA_BASE_DATE = "2026-07-28";
-window.LALA_BASE_MAXID = 364;
-window.LALA_NEXT_ID = 365;  // самый большой выданный + 1; только растёт
+window.LALA_BASE_MAXID = 367;
+window.LALA_NEXT_ID = 368;  // самый большой выданный + 1; только растёт
