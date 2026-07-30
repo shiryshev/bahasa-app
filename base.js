@@ -2148,8 +2148,104 @@ window.LALA_BASE = [
 "id_text": "dia",
 "pron": "ди́а",
 "ru": "он, она"
+},
+{
+"id": 368,
+"id_text": "Apakah Anda minum bir?",
+"pron": "апакáх áнда минúм бир",
+"ru": "Вы пьёте пиво?"
+},
+{
+"id": 369,
+"id_text": "minum",
+"pron": "минúм",
+"ru": "пить"
+},
+{
+"id": 370,
+"id_text": "bir",
+"pron": "бир",
+"ru": "пиво"
+},
+{
+"id": 371,
+"id_text": "Kami akan pergi ke Bromo segera.",
+"pron": "кáми áкан пэрги кэ бро́мо сэгэ́ра",
+"ru": "Мы едем на Бромо скоро."
+},
+{
+"id": 372,
+"id_text": "pergi",
+"pron": "пэрги",
+"ru": "ехать, идти"
+},
+{
+"id": 373,
+"id_text": "ke",
+"pron": "кэ",
+"ru": "в, на"
+},
+{
+"id": 374,
+"id_text": "Bromo",
+"pron": "бро́мо",
+"ru": "Бромо"
+},
+{
+"id": 375,
+"id_text": "segera",
+"pron": "сэгэ́ра",
+"ru": "скоро, немедленно"
+},
+{
+"id": 376,
+"id_text": "Anda sangat membantu hari ini.",
+"pron": "áнда сáнгат мэмбантú харí ини́",
+"ru": "Вы очень помогли сегодня."
+},
+{
+"id": 377,
+"id_text": "sangat",
+"pron": "сáнгат",
+"ru": "очень"
+},
+{
+"id": 378,
+"id_text": "membantu",
+"pron": "мэмбантú",
+"ru": "помогать"
+},
+{
+"id": 379,
+"id_text": "hari",
+"pron": "харí",
+"ru": "день"
+},
+{
+"id": 380,
+"id_text": "Anda mengerjakan semuanya dengan sangat baik.",
+"pron": "áнда мэнэрджакáн сэмуáньа дэнган сáнгат байк",
+"ru": "Вы всё делаете очень качественно."
+},
+{
+"id": 381,
+"id_text": "mengerjakan",
+"pron": "мэнэрджакáн",
+"ru": "делать, выполнять"
+},
+{
+"id": 382,
+"id_text": "semuanya",
+"pron": "сэмуáньа",
+"ru": "всё"
+},
+{
+"id": 383,
+"id_text": "baik",
+"pron": "байк",
+"ru": "хорошо, качественно"
 }
 ];
-window.LALA_BASE_DATE = "2026-07-28";
-window.LALA_BASE_MAXID = 367;
-window.LALA_NEXT_ID = 368;  // самый большой выданный + 1; только растёт
+window.LALA_BASE_DATE = "2026-07-30";
+window.LALA_BASE_MAXID = 383;
+window.LALA_NEXT_ID = 384;  // самый большой выданный + 1; только растёт
