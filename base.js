@@ -3440,6 +3440,6 @@ window.LALA_BASE = [
 "ru": "высокий"
 }
 ];
-window.LALA_BASE_DATE = "2026-09-04";
+window.LALA_BASE_DATE = "2026-09-07";
 window.LALA_BASE_MAXID = 582;
 window.LALA_NEXT_ID = 583;  // самый большой выданный + 1; только растёт
