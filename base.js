@@ -5198,6 +5198,6 @@ window.LALA_BASE = [
 "ru": "сливочное масло"
 }
 ];
-window.LALA_BASE_DATE = "2026-10-13";
+window.LALA_BASE_DATE = "2026-10-14";
 window.LALA_BASE_MAXID = 875;
 window.LALA_NEXT_ID = 876;  // самый большой выданный + 1; только растёт
